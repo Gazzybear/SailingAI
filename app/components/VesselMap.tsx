@@ -13,6 +13,7 @@ import {
   MapPin,
   Moon,
   Radio,
+  SlidersHorizontal,
   Sailboat,
   Sun,
   Waves,
@@ -82,6 +83,7 @@ export default function VesselMap({
   onRouteDestinationChange?: (destination: ForecastDestination | null) => void;
 }) {
   const [night, setNight] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [depthLayer, setDepthLayer] = useState<DepthLayer>("off");
   const route = useRoutePlanner();
   useEffect(() => {
@@ -212,6 +214,77 @@ export default function VesselMap({
           <span /> DEMO POSITION · NO GPS
         </span>
       </div>
+      {route.editing && (
+        <p className="route-editing-message">
+          Adding checkpoints: click the map or drag an existing numbered
+          checkpoint. Finish editing below when done.
+        </p>
+      )}
+      <div className="explorer-body">
+        <div className="explorer-map-area" ref={mapArea}>
+          <MapCanvas
+            position={position}
+            target={target}
+            places={places}
+            selected={selected}
+            onSelect={select}
+            night={night}
+            onViewChange={setViewpoint}
+            onTrafficAreaChange={setTrafficArea}
+            waypoints={route.waypoints}
+            routeEditing={route.editing}
+            onAddWaypoint={route.add}
+            onMoveWaypoint={route.move}
+            depthLayer={depthLayer}
+            ships={traffic.ships}
+          />
+          {filtersOpen && (
+            <div className="map-filter-panel" id="map-filter-panel" role="region" aria-label="Map filters" onKeyDown={event => { if (event.key === "Escape") { setFiltersOpen(false); document.getElementById("map-filter-toggle")?.focus(); } }}>
+              <div className="map-filter-heading"><strong>Map filters</strong><button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close map filters"><X size={16}/></button></div>
+      <div className="chart-controls">
+        <label>
+          Map view
+          <select
+            value={depthLayer}
+            onChange={(event) =>
+              setDepthLayer(event.target.value as DepthLayer)
+            }
+          >
+            <option value="off">Overview map</option>
+            <option value="uk">UK / Europe seabed · EMODnet</option>
+            <option value="us">US chart · NOAA</option>
+            <option value="admiralty">UK chart trial · currently unavailable</option>
+          </select>
+        </label>
+        {depthLayer !== "off" && <details className="layer-help"><summary>Coverage & depth guidance</summary>
+        {depthLayer === "uk" && (
+          <p>
+            UK and European seabed model. Click the sea for a numeric cell mean
+            in metres relative to Lowest Astronomical Tide (LAT). The ≈115 m
+            grid can miss rocks, shoals and narrow channels; it is not a
+            nautical chart or a navigation/clearance check. Changing the layer
+            keeps your vessel and map position.{" "}
+            <a
+              href="https://emodnet.ec.europa.eu/en/bathymetry"
+              target="_blank"
+              rel="noreferrer"
+            >
+              EMODnet DTM 2024 source ↗
+            </a>
+          </p>
+        )}
+        {depthLayer === "admiralty" && (<p>Local developer trial for England’s south coast. Charts are not up to date and are not for navigation. Zoom in for soundings where available. The provider returned blank images during verification on 1 November 2026; a blank area is missing chart data, not safe water. Changing this filter keeps your vessel and map position.</p>)}
+        {depthLayer === "us" && (
+          <p>
+            US waters only. Depth soundings are requested in metres from this
+            NOAA display; zoom in to see numbers. Colours retain the provider’s
+            chart palette. NOAA labels this display “not to be used for
+            navigation”; it does not validate your route or supply UK/global
+            chart coverage.
+          </p>
+        )}
+        </details>}
+      </div>
       <div className="explorer-toolbar">
         <div className="explorer-filters" aria-label="Map features">
           {[
@@ -247,6 +320,7 @@ export default function VesselMap({
           {night ? <Sun size={17} /> : <Moon size={17} />}
         </button>
       </div>
+      <details className="map-source-details"><summary>Places & data sources</summary>
       <div className="worldwide-search">
         <div>
           <Globe2 size={18} />
@@ -292,70 +366,9 @@ export default function VesselMap({
       {discovery.result && (
         <details className="worldwide-coverage"><summary>Place coverage and limitations</summary>{discovery.result.coverage}</details>
       )}
-      <div className="chart-controls">
-        <label>
-          Depth layer
-          <select
-            value={depthLayer}
-            onChange={(event) =>
-              setDepthLayer(event.target.value as DepthLayer)
-            }
-          >
-            <option value="off">Off</option>
-            <option value="uk">UK seabed · EMODnet</option>
-            <option value="us">US chart · NOAA</option>
-            <option value="admiralty">UK chart · ADMIRALTY trial</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            focus({ latitude: 50.77, longitude: -1.27 }, 12);
-            setDepthLayer("uk");
-          }}
-        >
-          View Solent seabed
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            choose({ latitude: 37.817, longitude: -122.45 });
-            focus({ latitude: 37.817, longitude: -122.45 }, 14);
-            setDepthLayer("us");
-          }}
-        >
-          Try San Francisco chart
-        </button>
-        {depthLayer === "uk" && (
-          <p>
-            UK and European seabed model. Click the sea for a numeric cell mean
-            in metres relative to Lowest Astronomical Tide (LAT). The ≈115 m
-            grid can miss rocks, shoals and narrow channels; it is not a
-            nautical chart or a navigation/clearance check. Changing the layer
-            keeps your vessel and map position.{" "}
-            <a
-              href="https://emodnet.ec.europa.eu/en/bathymetry"
-              target="_blank"
-              rel="noreferrer"
-            >
-              EMODnet DTM 2024 source ↗
-            </a>
-          </p>
-        )}
-        {depthLayer === "admiralty" && (<p>Local developer trial for England’s south coast. Charts are not up to date and are not for navigation. Zoom in for soundings where available. The provider returned blank images during verification on 1 November 2026; a blank area is missing chart data, not safe water. Changing this filter keeps your vessel and map position.</p>)}
-        {depthLayer === "us" && (
-          <p>
-            US waters only. Depth soundings are requested in metres from this
-            NOAA display; zoom in to see numbers. Colours retain the provider’s
-            chart palette. NOAA labels this display “not to be used for
-            navigation”; it does not validate your route or supply UK/global
-            chart coverage.
-          </p>
-        )}
-      </div>
       <div className="traffic-map-controls" aria-label="Live boat map layer">
         <strong><Radio size={14}/> Global boat feed · {traffic.enabled ? "on" : "off"}</strong>
-        <p role="status">{traffic.enabled ? traffic.message : "Select Boats above to show received vessel reports on this map."}</p>
+        <p role="status">{traffic.enabled ? traffic.message : "Turn on Boats in Map filters to show received vessel reports on this map."}</p>
         <small>Follows the map · {trafficArea.radius} NM around its centre · display updates every 5 seconds. {trafficArea.radius >= 250 ? "Area limit reached: zoom in to cover the entire visible map. " : ""}Up to 5,000 recent reports; coverage depends on AIS receivers. No inferred positions or collision-avoidance guidance.</small>
       </div>
       <details className="chart-access-note">
@@ -364,31 +377,11 @@ export default function VesselMap({
         <p><a href="https://admiraltyapi.developer.azure-api.net/discovery-api-instructions" target="_blank" rel="noreferrer">ADMIRALTY’s free developer trial</a> has real chart styling for England’s south coast, but requires a subscription key and its charts are not up to date or routinely updated. Current full coverage uses licensed AVCS Online access.</p>
         <p><a href="https://developer.garmin.com/marine-charts/web/" target="_blank" rel="noreferrer">Navionics worldwide charts</a> require a developer key. The free Standard viewer prohibits our route and boat overlays; the paid Enhanced service permits them. Navionics is not connected. The ADMIRALTY trial filter is configured for local testing; its provider currently returns blank chart images.</p>
       </details>
-      {route.editing && (
-        <p className="route-editing-message">
-          Adding checkpoints: click the map or drag an existing numbered
-          checkpoint. Finish editing below when done.
-        </p>
-      )}
-      <div className="explorer-body">
-        <div className="explorer-map-area" ref={mapArea}>
-          <MapCanvas
-            position={position}
-            target={target}
-            places={places}
-            selected={selected}
-            onSelect={select}
-            night={night}
-            onViewChange={setViewpoint}
-            onTrafficAreaChange={setTrafficArea}
-            waypoints={route.waypoints}
-            routeEditing={route.editing}
-            onAddWaypoint={route.add}
-            onMoveWaypoint={route.move}
-            depthLayer={depthLayer}
-            ships={traffic.ships}
-          />
+      </details>
+            </div>
+          )}
           <div className="map-floating-controls">
+            <button id="map-filter-toggle" type="button" aria-expanded={filtersOpen} aria-controls="map-filter-panel" onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={15}/> Filters</button>
             <button
               type="button"
               onClick={() => {
@@ -621,7 +614,7 @@ export default function VesselMap({
           <span>
             {discovery.result
               ? "Area results + curated places near vessel"
-              : "Curated Solent guide · use Search this area for more"}
+              : "Curated Solent guide · open Filters to discover more"}
           </span>
         </div>
         <div className="nearby-places">
@@ -648,7 +641,7 @@ export default function VesselMap({
           ) : (
             <p>
               {filter === "all"
-                ? "Use Search this area to discover harbours and marinas around the map centre. Our hand-checked local guides cover Cowes and Portsmouth."
+                ? "Open Filters and select Harbours or Marinas to discover places around the map centre. Our hand-checked local guides cover Cowes and Portsmouth."
                 : "No matching places in the current results. Try All places or search another area; missing services may be unmapped."}{" "}
               <a
                 href="https://marinas.com/browse/marina"
