@@ -27,3 +27,11 @@ The free Open-Meteo hosted service is for noncommercial use within its published
 ## Verification
 
 Live weather and marine requests for Solent/Gosport returned 72 merged hourly records with actual source-grid positions and retrieval times. Browser checks verified coordinate-preset changes, forecast-hour selection, harbour selection and the embedded map controls. Unit tests verify null handling, coordinate rejection, joining by valid time, source provenance and independent provider failure. No operational sea trial or navigation validation has been performed.
+
+## Almanac companion
+
+The new Almanac & tides tab links the authorized [Reeds 2026 digital edition](https://www.bloomsbury.com/uk/reeds-nautical-almanac-2026-9781399424950/), ADMIRALTY Tide Tables and Tidal Stream Atlases. The book is a paid publication and is not embedded or redistributed.
+
+The worksheet accepts published prediction data entered/reviewed by the skipper. Exact UTC hours HW−6..HW+6 preserve calendar dates; they are clock offsets, not inferred height or stream predictions. Reference-port HW may differ from local-port HW: use the port named by the atlas. Heights require their own datum, and range is displayed only after the user confirms a corresponding cycle/datum. Tide predictions remain separate from logbook observations. CSV includes the source and datum; print/copy/export preserve the reference schedule.
+
+[NOAA CO-OPS predictions API](https://api.tidesandcurrents.noaa.gov/api/prod/) is implemented for San Francisco 9414290 and The Battery 8518750. It returns actual high/low predictions for an explicitly selected UTC date in metres above MLLW. UI requires explicit event selections and does not assume which low water belongs with a high water. One-day responses may omit a neighbouring event on another date. The endpoint has a 12-second timeout and bounded 10-minute cache. This is US station coverage, not a global/UK tide API. UKHO Discovery is not connected and its no-caching restriction remains relevant to any future integration.

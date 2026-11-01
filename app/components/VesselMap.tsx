@@ -20,11 +20,27 @@ import {
   X,
 } from "lucide-react";
 import { bearing, display, type ForecastRow } from "@/lib/briefing";
-import { distanceNm, mapPlaces, placeDetails } from "@/lib/map-places";
+import {
+  distanceNm,
+  mapPlaces,
+  placeDetails,
+  type MapPlace,
+} from "@/lib/map-places";
+import type { DiscoveryPlace } from "@/lib/discovery";
+import { usePlaceDiscovery } from "./usePlaceDiscovery";
+import DiscoveredPlaceDetails from "./DiscoveredPlaceDetails";
+import RoutePlanner from "./RoutePlanner";
+import { useRoutePlanner } from "./useRoutePlanner";
+import VesselTrafficPanel from "./VesselTrafficPanel";
+import { useVesselTraffic } from "./useVesselTraffic";
 import MapCanvas, { type MapTarget } from "./MapCanvas";
 import "./vessel-map.css";
 
 export type VesselPosition = { latitude: number; longitude: number };
+type ExplorerPlace = Omit<MapPlace, "kind"> & {
+  kind: DiscoveryPlace["kind"];
+  remote?: DiscoveryPlace;
+};
 const presets = [
   { name: "The Solent", latitude: 50.77, longitude: -1.27 },
   { name: "Portsmouth", latitude: 50.786, longitude: -1.116 },
@@ -62,10 +78,38 @@ export default function VesselMap({
   vessel?: string;
 }) {
   const [night, setNight] = useState(false);
+  const [charts, setCharts] = useState(false);
+  const route = useRoutePlanner();
+  const traffic = useVesselTraffic(position);
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState("vessel");
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
+  const [viewpoint, setViewpoint] = useState(position);
+  const [listLimit, setListLimit] = useState(12);
+  const discovery = usePlaceDiscovery();
+  const allPlaces: ExplorerPlace[] = useMemo(
+    () => [
+      ...mapPlaces,
+      ...(discovery.result?.places ?? [])
+        .filter(
+          (p) =>
+            !["468762415", "205503540", "498576516", "225109863"].some((id) =>
+              p.sourceURL.endsWith(`/way/${id}`),
+            ),
+        )
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          kind: p.kind,
+          latitude: p.lat,
+          longitude: p.lon,
+          harbourId: "",
+          remote: p,
+        })),
+    ],
+    [discovery.result],
+  );
   const mapArea = useRef<HTMLDivElement>(null);
   const [target, setTarget] = useState<MapTarget>({
     ...position,
@@ -81,35 +125,44 @@ export default function VesselMap({
     (id: string) => {
       setSelected(id);
       mapArea.current?.scrollIntoView({ block: "nearest" });
-      const place = mapPlaces.find((p) => p.id === id);
-      if (place) focus(place, place.kind === "marina" ? 15 : 14);
+      const place = allPlaces.find((p) => p.id === id);
+      if (place)
+        focus(
+          place,
+          place.kind === "marina" ? 15 : place.kind === "port" ? 10 : 14,
+        );
     },
-    [focus],
+    [focus, allPlaces],
   );
   const places = useMemo(
     () =>
-      mapPlaces.filter((p) => {
+      allPlaces.filter((p) => {
         if (filter === "all") return true;
-        if (filter === "harbour") return p.kind === "harbour";
+        if (filter === "harbour")
+          return p.kind === "harbour" || p.kind === "port";
         if (filter === "marina") return p.kind === "marina";
         return (
-          placeDetails(p).marina?.facilities.some((f) =>
-            f.toLowerCase().includes(filter),
+          (p.remote?.facilities ?? placeDetails(p).marina?.facilities)?.some(
+            (f) => f.toLowerCase().includes(filter),
           ) ?? false
         );
       }),
-    [filter],
+    [filter, allPlaces],
   );
   const nearby = places
     .map((p) => ({ ...p, distance: distanceNm(position, p) }))
-    .filter((p) => p.distance < 30)
+    .filter((p) => p.remote || p.distance < 30)
     .sort((a, b) => a.distance - b.distance);
   const selectedPlace = mapPlaces.find((p) => p.id === selected);
+  const remotePlace = allPlaces.find((p) => p.id === selected)?.remote;
   const details = selectedPlace ? placeDetails(selectedPlace) : null;
   function choose(next: VesselPosition) {
+    setCharts(false);
     mapArea.current?.scrollIntoView({ block: "nearest" });
     setError("");
     setSelected("vessel");
+    discovery.clear();
+    setViewpoint(next);
     focus(next, 12);
     onPositionChange(next);
   }
@@ -174,6 +227,81 @@ export default function VesselMap({
           {night ? <Sun size={17} /> : <Moon size={17} />}
         </button>
       </div>
+      <div className="worldwide-search">
+        <div>
+          <Globe2 size={18} />
+          <span>
+            <strong>Find harbours around the world</strong>
+            <small>
+              Pan the map, then search within 30 km of its centre ·{" "}
+              {viewpoint.latitude.toFixed(2)}°, {viewpoint.longitude.toFixed(2)}
+              °
+            </small>
+          </span>
+        </div>
+        <button
+          type="button"
+          disabled={discovery.loading || !validPosition(viewpoint)}
+          onClick={() => {
+            setSelected("vessel");
+            setFilter("all");
+            setListLimit(12);
+            discovery.search(viewpoint);
+          }}
+        >
+          {discovery.loading ? "Searching…" : "Search this area"}
+        </button>
+      </div>
+      {(discovery.error || discovery.result) && (
+        <div className="worldwide-result" role="status">
+          {discovery.error
+            ? discovery.error
+            : `${discovery.result!.places.length} ${discovery.result!.dataMode === "gazetteer" ? "general port references" : "community-mapped places"} returned${discovery.result!.truncated ? " (result limit reached)" : ""}. ${discovery.result!.warning ?? "Coverage varies; an empty result does not mean there are no harbours."}`}
+          {discovery.result && (
+            <small>
+              {discovery.result.attribution} · {discovery.result.dataMode === "gazetteer" ? `snapshot dated ${new Date(discovery.result.retrievedAt).toLocaleDateString("en-GB",{timeZone:"UTC"})}` : `retrieved ${formatTime(discovery.result.retrievedAt)} UTC`}
+            </small>
+          )}
+        </div>
+      )}
+      {discovery.result && (
+        <p className="worldwide-coverage">{discovery.result.coverage}</p>
+      )}
+      <div className="chart-controls">
+        <label>
+          <input
+            type="checkbox"
+            checked={charts}
+            onChange={(event) => setCharts(event.target.checked)}
+          />{" "}
+          US chart depths · NOAA reference display
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            choose({ latitude: 37.817, longitude: -122.45 });
+            focus({ latitude: 37.817, longitude: -122.45 }, 14);
+            setCharts(true);
+          }}
+        >
+          Try San Francisco chart
+        </button>
+        {charts && (
+          <p>
+            US waters only. Depth soundings are requested in metres from this
+            NOAA display; zoom in to see numbers. Colours retain the provider’s
+            chart palette. NOAA labels this display “not to be used for
+            navigation”; it does not validate your route or supply UK/global
+            chart coverage.
+          </p>
+        )}
+      </div>
+      {route.editing && (
+        <p className="route-editing-message">
+          Adding checkpoints: click the map or drag an existing numbered
+          checkpoint. Finish editing below when done.
+        </p>
+      )}
       <div className="explorer-body">
         <div className="explorer-map-area" ref={mapArea}>
           <MapCanvas
@@ -183,6 +311,13 @@ export default function VesselMap({
             selected={selected}
             onSelect={select}
             night={night}
+            onViewChange={setViewpoint}
+            waypoints={route.waypoints}
+            routeEditing={route.editing}
+            onAddWaypoint={route.add}
+            onMoveWaypoint={route.move}
+            charts={charts}
+            ships={traffic.ships}
           />
           <div className="map-floating-controls">
             <button
@@ -257,7 +392,15 @@ export default function VesselMap({
           aria-label="Selected map feature"
           aria-live="polite"
         >
-          {selectedPlace && details ? (
+          {remotePlace ? (
+            <DiscoveredPlaceDetails
+              place={remotePlace}
+              distance={distanceNm(position, {
+                latitude: remotePlace.lat,
+                longitude: remotePlace.lon,
+              })}
+            />
+          ) : selectedPlace && details ? (
             <>
               <div className={`inspector-icon ${selectedPlace.kind}`}>
                 <Anchor size={22} />
@@ -379,21 +522,43 @@ export default function VesselMap({
           )}
         </aside>
       </div>
+      <RoutePlanner
+        planner={route}
+        onStartEditing={() =>
+          mapArea.current?.scrollIntoView({ block: "center" })
+        }
+        onFocus={(point) => {
+          focus(point, 14);
+          mapArea.current?.scrollIntoView({ block: "nearest" });
+        }}
+      />
+      <VesselTrafficPanel
+        traffic={traffic}
+        onHelsinkiDemo={() => choose({ latitude: 60.15, longitude: 24.96 })}
+      />
       <div className="map-discovery">
         <div className="discovery-heading">
           <div>
-            <span className="inspector-kicker">EXPLORE NEAR YOUR VESSEL</span>
+            <span className="inspector-kicker">
+              {discovery.result
+                ? "AREA SEARCH & LOCAL GUIDE"
+                : "EXPLORE NEAR YOUR VESSEL"}
+            </span>
             <h3>
               {nearby.length
-                ? `${nearby.length} ${nearby.length === 1 ? "place" : "places"} in your local guide`
-                : "Beyond our local guide"}
+                ? `${nearby.length} ${nearby.length === 1 ? "place" : "places"} to explore`
+                : "Explore a new coast"}
             </h3>
           </div>
-          <span>Curated Solent coverage · within 30 nm</span>
+          <span>
+            {discovery.result
+              ? "Area results + curated places near vessel"
+              : "Curated Solent guide · use Search this area for more"}
+          </span>
         </div>
         <div className="nearby-places">
           {nearby.length ? (
-            nearby.map((p) => (
+            nearby.slice(0, listLimit).map((p) => (
               <button
                 type="button"
                 key={p.id}
@@ -415,8 +580,8 @@ export default function VesselMap({
           ) : (
             <p>
               {filter === "all"
-                ? "The world map and vessel forecast work here. Our curated harbour pins currently cover Cowes and Portsmouth."
-                : "No matching places in this guide within 30 nm. Try All places or return to the Solent."}{" "}
+                ? "Use Search this area to discover harbours and marinas around the map centre. Our hand-checked local guides cover Cowes and Portsmouth."
+                : "No matching places in the current results. Try All places or search another area; missing services may be unmapped."}{" "}
               <a
                 href="https://marinas.com/browse/marina"
                 target="_blank"
@@ -428,6 +593,15 @@ export default function VesselMap({
           )}
         </div>
       </div>
+      {nearby.length > listLimit && (
+        <button
+          className="show-more-places"
+          type="button"
+          onClick={() => setListLimit((n) => n + 12)}
+        >
+          Show more places ({nearby.length - listLimit} remaining)
+        </button>
+      )}
       <div className="map-footer">
         <div className="vessel-map-presets">
           <span>MOVE DEMO VESSEL</span>

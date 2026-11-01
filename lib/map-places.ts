@@ -67,7 +67,9 @@ export const mapPlaces: MapPlace[] = [
     marinaIndex: 1,
   },
 ];
-export function placeDetails(place: MapPlace) {
+export function placeDetails(
+  place: Pick<MapPlace, "harbourId" | "marinaIndex">,
+) {
   const harbour = harbours.find((h) => h.id === place.harbourId)!;
   const marina =
     place.marinaIndex === undefined

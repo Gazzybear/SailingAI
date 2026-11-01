@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import type { MapPlace } from "@/lib/map-places";
+import { splitRouteAtDateline, type RouteWaypoint } from "@/lib/route-planner";
+import type { AISShip } from "@/lib/ais";
 import type { Position } from "@/lib/briefing";
 import "leaflet/dist/leaflet.css";
 
@@ -17,13 +19,27 @@ export default function MapCanvas({
   selected,
   onSelect,
   night,
+  onViewChange,
+  waypoints,
+  routeEditing,
+  onAddWaypoint,
+  onMoveWaypoint,
+  charts,
+  ships,
 }: {
   position: Position;
   target: MapTarget;
-  places: MapPlace[];
+  places: (Omit<MapPlace, "kind"> & { kind: "marina" | "harbour" | "port" })[];
   selected: string;
   onSelect: (id: string) => void;
   night: boolean;
+  onViewChange: (position: Position) => void;
+  waypoints: RouteWaypoint[];
+  routeEditing: boolean;
+  onAddWaypoint: (position: Position) => void;
+  onMoveWaypoint: (id: string, position: Position) => boolean;
+  charts: boolean;
+  ships: AISShip[];
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null);
@@ -31,6 +47,7 @@ export default function MapCanvas({
   const [ready, setReady] = useState(false),
     [failed, setFailed] = useState(false);
   const initial = useRef(target);
+  const [chartStatus, setChartStatus] = useState("loading");
   useEffect(() => {
     let cancelled = false;
     let observer: ResizeObserver | undefined;
@@ -49,7 +66,12 @@ export default function MapCanvas({
           initial.current.zoom,
         );
         map.current = instance;
+        instance.on("moveend", () => {
+          const centre = instance.getCenter().wrap();
+          onViewChange({ latitude: centre.lat, longitude: centre.lng });
+        });
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          className: "overview-base-tiles",
           maxZoom: 19,
           attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
@@ -78,13 +100,141 @@ export default function MapCanvas({
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [onViewChange]);
   useEffect(() => {
     if (!ready || !map.current) return;
     map.current.setView([target.latitude, target.longitude], target.zoom, {
       animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
   }, [ready, target]);
+
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance || !routeEditing) return;
+    const add = (event: Leaflet.LeafletMouseEvent) => {
+      const point = event.latlng.wrap();
+      onAddWaypoint({ latitude: point.lat, longitude: point.lng });
+    };
+    instance.on("click", add);
+    const element = container.current;
+    element?.classList.add("route-editing");
+    return () => {
+      instance.off("click", add);
+      element?.classList.remove("route-editing");
+    };
+  }, [ready, routeEditing, onAddWaypoint]);
+
+  useEffect(() => {
+    const L = library.current,
+      instance = map.current;
+    if (!ready || !L || !instance) return;
+    const group = L.layerGroup().addTo(instance);
+    for (const segment of splitRouteAtDateline(waypoints))
+      L.polyline(segment, {
+        color: "#d9862c",
+        weight: 3,
+        dashArray: "8 7",
+        opacity: 0.9,
+        interactive: false,
+      }).addTo(group);
+    waypoints.forEach((point, index) => {
+      const marker = L.marker([point.latitude, point.longitude], {
+        draggable: routeEditing,
+        autoPan: true,
+        zIndexOffset: 1500,
+        icon: L.divIcon({
+          className: "route-waypoint",
+          html: `<span>${index + 1}</span>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+        }),
+        title: `Checkpoint ${index + 1}: ${point.name}`,
+      }).addTo(group);
+      const label = document.createElement("span");
+      label.textContent = point.name;
+      marker.bindTooltip(label, { direction: "top", offset: [0, -16] });
+      marker.on("dragend", () => {
+        const p = marker.getLatLng().wrap();
+        if (!onMoveWaypoint(point.id, { latitude: p.lat, longitude: p.lng }))
+          marker.setLatLng([point.latitude, point.longitude]);
+      });
+    });
+    return () => {
+      group.remove();
+    };
+  }, [ready, waypoints, routeEditing, onMoveWaypoint]);
+
+  useEffect(() => {
+    const L = library.current,
+      instance = map.current;
+    if (!ready || !L || !instance || !charts) return;
+    let tileErrors = 0;
+    const layer = L.tileLayer
+      .wms(
+        "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/exts/MaritimeChartService/WMSServer",
+        {
+          display_params: JSON.stringify({
+            ECDISParameters: {
+              version: "10.9.1",
+              DynamicParameters: {
+                Parameter: [{ name: "DisplayDepthUnits", value: 1 }],
+              },
+            },
+          }),
+          layers: "0,1,2,3,4,5,6,7,12",
+          format: "image/png",
+          transparent: true,
+          version: "1.3.0",
+          maxZoom: 18,
+          zIndex: 3,
+          attribution:
+            '<a href="https://www.nauticalcharts.noaa.gov/data/gis-data-and-services.html" target="_blank" rel="noreferrer">NOAA chart display</a> · US only · not for navigation',
+        } as Leaflet.WMSOptions & { display_params: string },
+      )
+      .on("loading", () => {
+        tileErrors = 0;
+        setChartStatus("loading");
+      })
+      .on("tileerror", () => {
+        tileErrors++;
+        setChartStatus("error");
+      })
+      .on("load", () => setChartStatus(tileErrors ? "error" : "ready"))
+      .addTo(instance);
+    return () => {
+      layer.remove();
+    };
+  }, [ready, charts]);
+
+  useEffect(() => {
+    const L = library.current,
+      instance = map.current;
+    if (!ready || !L || !instance) return;
+    const group = L.layerGroup().addTo(instance);
+    ships.forEach((ship) => {
+      const direction = Number.isFinite(ship.cog) ? ship.cog : 0;
+      const marker = L.marker([ship.latitude, ship.longitude], {
+        icon: L.divIcon({
+          className: "ais-ship-pin",
+          html:
+            ship.cog === undefined
+              ? '<span class="ais-unknown">●</span>'
+              : `<span style="transform:rotate(${direction}deg)">${boat}</span>`,
+          iconSize: [27, 27],
+          iconAnchor: [13, 13],
+        }),
+        title: `AIS ${ship.name || ship.mmsi}`,
+        zIndexOffset: 700,
+      }).addTo(group);
+      const panel = document.createElement("div");
+      panel.textContent = `${ship.name || "Vessel"} · MMSI ${ship.mmsi}\nReported ${new Date(ship.timestamp).toLocaleString("en-GB", { timeZone: "UTC" })} UTC\nSpeed ${ship.sog === undefined ? "unavailable" : `${ship.sog.toFixed(1)} kn`} · Course ${ship.cog === undefined ? "unavailable" : `${ship.cog.toFixed(0)}°T`}\nAIS reports can be delayed or incomplete.`;
+      panel.style.whiteSpace = "pre-line";
+      marker.bindPopup(panel);
+    });
+    return () => {
+      group.remove();
+    };
+  }, [ready, ships]);
   useEffect(() => {
     const L = library.current;
     if (!ready || !map.current || !L) return;
@@ -147,6 +297,21 @@ export default function MapCanvas({
       </div>
       {!ready && !failed && (
         <div className="map-loading">Opening your coastal view…</div>
+      )}
+      {charts && (
+        <div className="chart-layer-status" role="status">
+          {chartStatus === "loading"
+            ? "Loading NOAA reference chart…"
+            : chartStatus === "error"
+              ? "Some chart tiles failed to load. Depth coverage is incomplete."
+              : "NOAA reference display · depth soundings in metres · US coverage only"}
+        </div>
+      )}
+      {ships.length > 0 && (
+        <div className={`ais-map-legend ${charts ? "below-chart" : ""}`}>
+          <span /> {ships.length} received AIS reports · select a ship for its
+          timestamp
+        </div>
       )}
       {failed && (
         <div className="map-load-error" role="status">

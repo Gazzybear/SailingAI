@@ -236,3 +236,45 @@
     padding: 18px;
   }
 }
+.skipper-tabs {
+  display: flex;
+  gap: 7px;
+  padding: 6px;
+  background: #e7eeed;
+  border: 1px solid #dbe6e3;
+  border-radius: 12px;
+  margin: 20px 0 23px;
+  width: fit-content;
+  max-width: 100%;
+}
+.skipper-tabs button {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 12px 18px;
+  color: #627c81;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.skipper-tabs button[aria-pressed="true"] {
+  background: #fff;
+  color: #19594f;
+  box-shadow: 0 2px 8px #153f3620;
+}
+.skipper-tabs button:focus-visible {
+  outline: 3px solid #368e80;
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .skipper-tabs {
+    width: 100%;
+    gap: 2px;
+  }
+  .skipper-tabs button {
+    padding: 10px 8px;
+    font-size: 11px;
+    flex: 1;
+  }
+}

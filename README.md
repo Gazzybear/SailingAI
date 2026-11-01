@@ -79,3 +79,17 @@ See [demo instructions](docs/DEMO.md) and [submission status](docs/SUBMISSION.md
 Open **Skipper briefing** for live weather and visibility forecasts, modelled sea state and tidal context, and an interactive coastal explorer. The map has day/night styling, selectable harbour and marina pins, fuel/water filters, VHF contacts, facilities, official notices and tide links. The forecast overlay follows the simulated vessel and the selected forecast hour; exploring a marina does not move the vessel. Nearby distances are straight-line nautical miles, not navigable routes. Curated pins cover Cowes and Portsmouth; worldwide map browsing and demo vessel presets remain available. Forecasts are separate from skipper observations. No extra key is needed for the noncommercial Open-Meteo demo.
 
 Tidal levels are relative to global mean sea level, not chart datum: they cannot determine clearance. The app links official ADMIRALTY tide predictions and Met Office marine bulletins. Marinas.com has retired its API, so marina discovery uses directory links and official operator sources. Read [data sources, limitations and integration research](docs/DATA-SOURCES.md).
+
+## Route checkpoints, chart depths and vessel traffic
+
+The map supports up to 50 named planning checkpoints. Enable **Add checkpoints**, click the map, drag numbered markers, reorder or remove points, and export GPX. The route is saved separately in this browser. Distances are straight-line nautical miles and bearings are true; connecting lines can cross land or hazards and are not checked navigable routes.
+
+**US chart depths** adds NOAA's chart reference display with numerical soundings requested in metres. **Try San Francisco chart** moves the simulated vessel to the example. NOAA expressly excludes this display from navigation use. UK and worldwide licensed chart coverage is not connected; no depth or clearance values are invented. The day/night filter affects only the general basemap, preserving the NOAA chart palette.
+
+**Vessel traffic** is opt-in. **Try Helsinki live example** shows actual Fintraffic AIS reports from Finnish waters, with report ages, SOG/COG and 30-second refresh. It is not simulated traffic or a collision-avoidance display. Global AISstream support requires a separate server-only `AISSTREAM_API_KEY`; without it the UI says unconfigured. The existing OpenAI key cannot authenticate AIS/chart providers. See [chart and AIS sources](docs/CHARTS-AND-AIS.md).
+
+## Almanac and worldwide harbour discovery
+
+The **Almanac & tides** tab sits beside **Marinas**. Enter a published high/low-water time, optional height, datum and source. It produces an exact dated UTC HW−6 through HW+6 worksheet, with editable notes and CSV/copy/print. It never generates hourly tide heights, stream rates or clearance. NOAA import supplies actual H/L events for two named US stations; choose each event explicitly. UK predictions remain a manual published-source workflow pending suitable API credentials/licensing. The Reeds 2026 link opens the publisher's paid digital edition, not a copied book.
+
+Use **Search this area** to look for community harbours/marinas around the map centre. When public Overpass providers are unavailable, the app clearly switches to a bundled 1,081-port Natural Earth reference gazetteer. This gives worldwide port discovery, not every marina or precise entrance location. See [coverage and provider details](docs/WORLDWIDE-DISCOVERY.md).

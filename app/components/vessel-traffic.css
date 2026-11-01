@@ -1,0 +1,243 @@
+.vessel-traffic {
+  border: 1px solid #d9e6e2;
+  border-radius: 12px;
+  background: #fff;
+  padding: 22px;
+  margin: 20px 0;
+  color: #213e49;
+}
+.vessel-traffic-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.vessel-traffic-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #6b9485;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.vessel-traffic-heading h3 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  margin: 10px 0 17px;
+}
+.traffic-status {
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 7px 9px;
+  border-radius: 20px;
+  border: 1px solid #dce7e0;
+  color: #748c81;
+  background: #f0f5f2;
+}
+.traffic-status-live {
+  color: #216f53;
+  background: #e6f3e9;
+  border-color: #bedfc9;
+}
+.traffic-status-error,
+.traffic-status-unconfigured,
+.traffic-status-busy {
+  color: #906337;
+  background: #fff3e6;
+  border-color: #e9d8bc;
+}
+.vessel-traffic-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.traffic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 37px;
+  color: #406b5b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.traffic-toggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: #287b64;
+}
+.traffic-provider {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 10px;
+  color: #779185;
+  min-width: 190px;
+  flex: 1;
+}
+.traffic-provider select {
+  font: inherit;
+  font-size: 12px;
+  color: #244b42;
+  background: #f9fcfa;
+  border: 1px solid #d7e4dc;
+  border-radius: 5px;
+  padding: 10px;
+  max-width: 100%;
+}
+.vessel-traffic-controls .button {
+  font-size: 10px;
+  padding: 10px 13px;
+}
+.traffic-coverage,
+.traffic-demo > span,
+.traffic-retrieval,
+.traffic-limit {
+  font-size: 10px;
+  line-height: 1.9;
+  color: #7b9088;
+}
+.traffic-coverage {
+  margin: 15px 0 10px;
+}
+.traffic-demo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 13px;
+  background: #f2f7f4;
+  border: 1px solid #e0ebe4;
+  border-radius: 7px;
+  margin: 11px 0;
+}
+.traffic-demo .text-button {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.traffic-demo > span {
+  flex: 1;
+  min-width: 180px;
+}
+.traffic-feed-message {
+  font-size: 11px;
+  line-height: 1.8;
+  padding: 11px 13px;
+  border: 1px solid #e0e9e3;
+  border-radius: 6px;
+  color: #5b7a6c;
+  background: #f6f9f6;
+}
+.traffic-feed-error {
+  background: #fff3eb;
+  color: #8c5d3b;
+  border-color: #eddccc;
+}
+.traffic-retrieval {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.traffic-table-wrap {
+  overflow: auto;
+  margin-top: 15px;
+  border: 1px solid #e0e9e4;
+  border-radius: 7px;
+}
+.traffic-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.traffic-table-wrap caption {
+  text-align: left;
+  font-size: 10px;
+  padding: 12px;
+  color: #6b897c;
+  line-height: 1.7;
+}
+.traffic-table-wrap thead {
+  background: #f0f5f2;
+}
+.traffic-table-wrap th,
+.traffic-table-wrap td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e8eeea;
+  white-space: nowrap;
+  color: #55776a;
+  font-weight: 400;
+}
+.traffic-table-wrap thead th {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.traffic-table-wrap tbody th span {
+  font-weight: 600;
+  color: #385e51;
+  display: block;
+  white-space: normal;
+  min-width: 110px;
+}
+.traffic-table-wrap small {
+  display: block;
+  margin-top: 5px;
+  color: #8ba095;
+  font-size: 8px;
+  font-weight: 400;
+}
+.traffic-table-wrap tbody tr:last-child td,
+.traffic-table-wrap tbody tr:last-child th {
+  border-bottom: 0;
+}
+.traffic-source {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+.traffic-source a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #497e6b;
+  font-size: 9px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.traffic-limit {
+  font-size: 9px;
+  margin-bottom: 0;
+}
+@media (max-width: 600px) {
+  .vessel-traffic {
+    padding: 17px;
+  }
+  .traffic-provider {
+    width: 100%;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .traffic-demo {
+    display: block;
+  }
+  .traffic-demo > span {
+    display: block;
+  }
+  .traffic-source {
+    display: block;
+  }
+  .traffic-source a {
+    margin: 8px 0;
+  }
+  .vessel-traffic-controls {
+    gap: 10px;
+  }
+  .traffic-status {
+    font-size: 7px;
+  }
+}
