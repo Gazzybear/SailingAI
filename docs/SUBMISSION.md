@@ -6,7 +6,7 @@
 
 **Repository:** https://github.com/Gazzybear/SailingAI
 
-**Publication status:** Source is committed locally. Push was attempted and rejected by GitHub with invalid username/token authentication. The remote repository has not been updated. Restore GitHub Git authentication, then run:
+**Publication status:** Source was successfully pushed to the public GitHub repository after authentication was refreshed. The remote main branch was verified against the local commit. To publish later changes, run:
 
 ```powershell
 git -C "C:\Users\gaz85\OneDrive\Documents\AI\Hackathon\SailingAI" push -u origin main
@@ -36,4 +36,4 @@ git -C "C:\Users\gaz85\OneDrive\Documents\AI\Hackathon\SailingAI" push -u origin
 
 ## Readiness
 
-Core application journey verified; remaining verification limits are listed above. Submission package ready: no (GitHub publication, video and team details outstanding). Submission accepted: no submission attempted.
+Core application journey verified; remaining verification limits are listed above. GitHub publication complete. Submission package ready: no (video and team details outstanding). Submission accepted: no submission attempted.
