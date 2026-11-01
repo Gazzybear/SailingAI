@@ -1,101 +1,185 @@
 # SailingAI
 
-Skipper briefing now compares **current-position and destination conditions**, with independent arrival-hour selection, sea state, visibility, precipitation chance, wind and swell. Choose a harbour, coordinates or the final route checkpoint. The **Live boats (AIS)** filter sits directly above the map and defaults to UK/global AISstream; configure its key privately on the server. See [forecast and live-boat details](docs/PASSAGE-CONDITIONS.md).
+**More clarity. Less admin. More time for the skipper.**
 
-The logbook includes separate TWS/AWS, compass corrections, instrument log distance, sea-state and swell fields, a traditional table and full CSV export. Download a printable paper sheet or upload a JPEG/PNG/WebP photo for row-by-row skipper review. See [logbook and photo workflow](docs/LOGBOOK-AND-PHOTOS.md) for limits, preservation of old entries and verification details.
+SailingAI brings passage forecasts, harbour information, vessel reports, planning notes and the logbook into one workspace. Its purpose is to help recreational skippers read useful information quickly, understand where it comes from, and keep a clear record of their passage.
 
-The existing map's **Depth layer** filter switches between Off, UK seabed (free EMODnet) and US chart (NOAA), preserving the current map and vessel position. UK click-to-read values are coarse grid means relative to LAT, not current water depth or clearance. See [UK depth data](docs/UK-DEPTH.md).
+Skippers often switch between weather pages, tide tables, marina directories and handwritten notes. SailingAI reduces that effort: compare current-position and destination conditions side by side, choose map views from one simple filter panel, and turn notes or paper-log photographs into structured drafts for review. The emphasis is **efficiency, clear presentation and easy access to information**, with units, timestamps and missing readings made visible. It supports the skipper’s judgement; it does not replace official navigation tools or a proper lookout.
 
-Your intelligent sailing logbook. Built for recreational sailors who want to turn informal observations into consistent, reviewed passage records.
+Built during the DevDay Exchange Community Hackathon in London, 1 November 2026.
 
-Create a passage → record an observation → prepare structured fields → review and correct → save → reopen → export CSV.
+## Main features
 
-![Reviewed passage log](docs/images/passage-log.png)
+### Skipper briefing: here now, there on arrival
 
-## Run locally
+- Separate forecast cards for current position and destination, with independent forecast times.
+- Sea state, wind waves, swell height/direction/period, visibility, rain/precipitation chance, wind, gusts, temperature and pressure.
+- Choose a destination harbour, coordinates or the final route checkpoint.
+- Forecast-valid and retrieval times, hourly detail and source links. Automatic refresh every ten minutes while open; server responses may be cached for five minutes.
+- Links to official Met Office marine forecasts and ADMIRALTY tide predictions.
 
-Requires Node.js 22.9+ and npm.
+![Current-position and destination forecasts showing sea state, visibility, precipitation chance and wind](docs/images/passage-conditions.png)
+
+*Forecasts are model predictions, separate from observed logbook readings. Screenshots show the demo on 1 November 2026, not current sailing conditions.*
+
+### One map, one Filters panel
+
+Open **Filters** on the map to choose an overview, UK/European seabed model or US chart reference view, and show boats, harbours, marinas, fuel or water. Day/night styling and expandable source details sit in the same panel. Changing views preserves the vessel and map position; there are no separate San Francisco or Solent chart buttons.
+
+- **My vessel**, **World** and **Expand** remain immediately accessible.
+- Select a harbour or marina for available facilities, VHF contacts, official guidance and directory links.
+- Worldwide place discovery follows the viewed area when enabled. If community-data services fail, a bundled Natural Earth gazetteer provides 1,081 general port references. This is not every harbour or marina.
+- **Boats** displays received AISstream reports and refreshes every five seconds. Requires an AISstream key. Limits: 5,000 recent vessels, up to 250 NM around the map centre, and reports expire after 30 minutes. Receiver coverage is incomplete.
+- Vessel position is simulated for the demo; this release does not read onboard GPS.
+
+![The on-map Filters panel groups chart views, places and live boats](docs/images/map-filters.png)
+
+### Editable passage routes
+
+Add up to 50 named checkpoints by clicking the map. Drag markers, edit coordinates and names, reorder or delete checkpoints, and export GPX. Routes are saved in this browser. Distances are straight-line nautical miles and bearings are true; legs are not checked against land, shoals or restrictions.
+
+### A fuller, reviewed logbook
+
+Create a passage → record an observation → review the prepared fields → save → reopen → export CSV. Use manual entry, a fixed sample or optional AI extraction from your own notes.
+
+Fields include time, position, instrument log distance, compass course, deviation, variation, leeway, true course/track, GPS COG, speed, depth/reference, pressure, visibility and weather notation. **True wind speed (TWS), apparent wind speed (AWS), apparent wind angle, sea-state code and swell** have separate fields. Missing measurements remain unrecorded; forecasts are not inserted as observations.
+
+Routine entries support hourly logging; event entries preserve the actual minute. Review entries in the traditional table or full detail view, reopen saved passages, and export all recorded fields to CSV.
+
+![Separate true and apparent wind fields, with sea-state and swell recording](docs/images/logbook-wind-swell.png)
+
+### Paper to digital
+
+In **Passages & logbook**, open **Paper logbook · download template or upload a photo**:
+
+1. Download the blank HTML template or open the print view and use **Print / Save as PDF**.
+2. Complete the paper sheet and photograph it with readable writing and headings.
+3. Upload JPEG, PNG or WebP, up to 6 MiB. Convert HEIC or PDF first.
+4. With live AI configured, select **Read photo with AI**. Review each draft row, confirm its date/time and correct uncertain values before saving.
+
+Imports support up to 12 draft rows. Selecting a photo alone does not send it to OpenAI. The app does not store the photo; unsaved drafts are lost on reload or leaving the passage workspace. Keep your original paper/image.
+
+### Almanac & tides worksheet
+
+Beside **Marinas**, **Almanac & tides** accepts published high/low-water times, heights, datum and source. It prepares a dated **HW−6 to HW+6** worksheet with editable notes, CSV download, copy and print.
+
+Two named US NOAA stations support high/low-water imports. UK entries use published-source manual entry. The Reeds 2026 link opens the publisher’s paid digital edition; the book is not included. Worksheet times are UTC. The worksheet does not predict hourly heights, tidal-stream rates, slack water or safe clearance.
+
+![Almanac worksheet with published high and low water and hourly planning notes](docs/images/almanac-worksheet.png)
+
+## Set up and run locally
+
+### Requirements
+
+- Node.js 22 (22.12 or later in that release line), or Node.js 24, and npm.
+- Git to clone the repository, or download and extract the source ZIP.
+- Internet for live forecasts, map tiles and external data. Sample/manual logging needs no API key.
+
+### Install
 
 ```sh
+git clone https://github.com/Gazzybear/SailingAI.git
+cd SailingAI
 npm ci
-cp .env.example .env.local
+```
+
+Create the private configuration file once. Preserve any existing `.env.local` containing your keys.
+
+**Windows PowerShell:**
+
+```powershell
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
+```
+
+**macOS / Linux:**
+
+```sh
+test -f .env.local || cp .env.example .env.local
+```
+
+Start the app:
+
+```sh
 npm run dev
 ```
 
-On PowerShell use `Copy-Item .env.example .env.local`. Open http://127.0.0.1:3000. Sample and manual modes need no API key. Choose **explore a sample passage**, create it, then **Review sample**. This is fixed sample data, not a live model response.
+Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)** on the same computer. Keep the terminal running; press `Ctrl+C` to stop. The scripts bind locally, so this is not a public share link.
 
-For live extraction, privately set `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-6-luna` and `LIVE_AI_ENABLED=true` in `.env.local`, then restart the server. Do not paste keys into chat or commit them. This setting enables chargeable requests. Keep the server local unless production abuse controls have been configured.
+### Optional API configuration
+
+Edit `.env.local` privately, then restart the server. Never put keys in browser-side variables, screenshots or Git commits. This file is ignored by Git.
+
+| Feature | Configuration | Without a key |
+| --- | --- | --- |
+| AI notes and paper-photo reading | Set `OPENAI_API_KEY`, `OPENAI_MODEL` to a model available to your project, and `LIVE_AI_ENABLED=true`. The example uses `gpt-6-luna`. Photo reading needs image input support. | Manual entry and fixed sample remain usable. |
+| Received boat positions | Set `AISSTREAM_API_KEY` from your AISstream account. | Live global boat reports are unavailable. |
+| Local ADMIRALTY trial | After accepting provider terms, set `ADMIRALTY_API_KEY` and `ADMIRALTY_TRIAL_ENABLED=true`. | Trial charts are unavailable; other views remain usable. |
+| Forecasts, overview map, EMODnet, NOAA and place discovery | No extra key for the current noncommercial demo integrations. | Internet access is still needed; outages and usage limits can apply. |
+
+Live AI incurs API charges. Model access depends on your OpenAI project. Keep `LIVE_AI_ENABLED=false` for sample/manual use.
+
+**ADMIRALTY status, verified 1 November 2026:** authentication succeeded, but Discovery returned blank chart images for tested south-coast areas and its documented example. The app detects these and reports unavailable coverage. A key does not currently guarantee a working trial chart. The local-only trial covers England’s south coast and is not up to date or routinely updated. See [integration details](docs/CHARTS-AND-AIS.md).
+
+### First use
+
+1. Create a passage or explore a sample passage.
+2. Open **Skipper briefing** to compare conditions and choose destination/arrival time.
+3. Open map **Filters**, select a view and enable places or boats. Select a pin for details.
+4. Use **Add checkpoints** to sketch a route, or **Almanac & tides** for a published-prediction worksheet.
+5. In **Passages & logbook**, enter observations manually, review a sample, or prepare an AI draft. Check every field before saving.
+6. Export logbook CSV, route GPX and any almanac worksheet you want to keep.
+
+### Checks and production-mode run
 
 ```sh
-npm run test
+npm test
 npm run lint
 npm run typecheck
 npm run build
 npm start
 ```
 
-Production checks and live-integration status are recorded in `docs/SUBMISSION.md`.
+Stop the development server before `npm start` to free port 3000. `npm start` serves the built app locally. The separate `node scripts/verify-live.mjs` requires the local server and live AI configuration; it makes chargeable API requests and is separate from offline unit tests.
 
-With a local server running and live calls explicitly enabled, `node scripts/verify-live.mjs` runs seven additional checks (five real AI extractions plus empty/overlength input rejection). This command incurs API usage and is deliberately separate from the offline unit suite.
+## Data sources and practical limits
 
-## Implementation
+| Data | Source and scope |
+| --- | --- |
+| Weather, visibility and marine forecasts | Open-Meteo and model providers; grids may not resolve harbour conditions. Free endpoint use is noncommercial. |
+| Overview map | OpenStreetMap contributors via Leaflet; not a nautical chart. |
+| UK/European seabed | EMODnet DTM 2024, roughly 115 m grid. Click for cell means relative to LAT; not current depth or vessel clearance. |
+| US chart display | NOAA reference display with soundings requested in metres; US only and not for navigation. |
+| UK trial charts | ADMIRALTY Discovery; blank images in verification, limited south-coast coverage and noncurrent data. |
+| Vessel traffic | AISstream received reports; incomplete and potentially delayed, not every vessel at sea. |
+| Ports and marinas | Curated Solent guidance, community mapping via Overpass and Natural Earth fallback; official harbour/operator and Marinas.com links. |
+| Tides | Published-source entry, selected NOAA events and official prediction links. Modelled sea level elsewhere is relative to mean sea level, not chart datum. |
 
-Next.js App Router, React, TypeScript, CSS, Lucide icons, official OpenAI SDK, Responses API, Zod Structured Outputs and Vitest. A server route uses `responses.parse` with `zodTextFormat`; keys stay on the server. The model is instructed to extract only the submitted observation. Null readings stay unrecorded, and the original note and prepared draft are retained separately from reviewed values. Output validation checks types and ranges; the skipper checks meaning.
+SailingAI is **not a navigation or collision-avoidance system**. Use current official charts, forecasts, Notices to Mariners, tidal publications and harbour instructions. No map colour, route line, empty area or AI draft establishes that a passage is safe.
 
-The endpoint has input/output bounds, no automatic retries and a 30-second SDK timeout. Live calls default to disabled. There is no shared production rate limiter: before anonymous public live AI, configure host-level abuse controls and usage monitoring or leave live AI disabled. Request and model errors preserve the note and allow manual entry. Model access has to be checked with the configured project.
+## Records and privacy
 
-## Records, privacy and limitations
+Passages, reviewed entries and routes are stored in this browser on this site. There are no accounts, cloud backups or multi-device sync. `localhost`, `127.0.0.1` and a hosted URL use different browser storage. Clearing site data can remove records. Export regularly; almanac worksheets and unsaved photo drafts need their own export before leaving/reloading.
 
-Records use versioned localStorage in the current browser and origin. They do not sync or back up to a cloud account. Moving from localhost to a hosted site does not move your records. Clearing browser data can erase them. Failed reads protect existing storage; failed saves retain the open form. Export CSV regularly. CSV includes reviewed values, source, original notes and timestamps. Export-only apostrophes protect text cells that could be interpreted as formulas.
+AI preparation sends the submitted note or photo to OpenAI with `store:false`; this is not a claim of zero provider retention. Keys stay on the server. Map and forecast requests go to their respective providers. Offline reopening is not guaranteed. The interface uses labelled controls, keyboard-operable filters and readable units; a full accessibility audit remains outstanding.
 
-AI preparation sends the note to OpenAI. The app does not log request bodies, does not send passage/crew metadata unnecessarily and requests `store:false`; this is not a claim of zero retention by the API provider. Do not enter private or sensitive information unnecessarily.
+## Hosting
 
-No offline reopening guarantee, multi-device sync, GPS or licensed nautical charts. A separate skipper briefing now provides real weather/marine forecasts and a simulated vessel map; see the marine data section below. Time-only observations remain as written until the skipper confirms an observation date/time in Europe/London. Ambiguous DST times are rejected. Untimed entries are grouped after timed entries. Native modal keyboard focus trapping and broader accessibility auditing remain follow-up work.
+The demo runs locally; no public deployment is claimed. Hosting needs a Node-capable environment, server-side secrets and abuse controls for chargeable AI. Continuous AIS uses an in-memory WebSocket collector and needs a suitable long-running server; stateless/serverless hosting needs a separate persistent collector. The ADMIRALTY trial proxy is local-only and must not be exposed as a public chart redistribution service.
 
-## Safety
+## Built with Codex and credited sources
 
-SailingAI records skipper observations and is not a navigation system. The skipper is responsible for navigation and verification against official charts, forecasts, Notices to Mariners and harbour instructions. User review does not certify an instrument reading. The sample Cowes–Gosport passage is illustrative; no route or live conditions are supplied.
+Next.js App Router, React, TypeScript, Leaflet, Lucide icons, the OpenAI SDK, Zod and Vitest. Fonts are DM Sans and Manrope via Google Fonts, with system fallbacks. Marine-data attribution appears in the app and linked documents. ADMIRALTY and UKHO are trademarks of the Secretary of State for Defence.
 
-## Deployment
+The idea and brief predate the event; no pre-existing Passage Desk code was imported. The core app was built during the hackathon. Codex helped implement reviewed extraction, storage/export, paper-photo import, map filters, route editing, forecast comparison and AIS collection. Tests cover keeping Beaufort force separate from knots, preserving missing readings, validating times and rejecting blank chart images. Git history records the changes. No project licence has yet been selected.
 
-The project is compatible with a Node-capable Next.js host such as Vercel. Import this repository, use `npm run build`, and configure environment variables on the host. Keep `LIVE_AI_ENABLED=false` until shared abuse controls are in place. Verify anonymous repository/video access and any app URL before submission. Deployment is optional under the event guide. No deployment URL is claimed yet.
+## Further documentation
 
-## Built during the hackathon
+- [Forecasts and live boats](docs/PASSAGE-CONDITIONS.md)
+- [Logbook fields and photo workflow](docs/LOGBOOK-AND-PHOTOS.md)
+- [Charts and AIS](docs/CHARTS-AND-AIS.md)
+- [UK depth model](docs/UK-DEPTH.md)
+- [Worldwide place discovery](docs/WORLDWIDE-DISCOVERY.md)
+- [Data-source research](docs/DATA-SOURCES.md)
+- [Demo instructions](docs/DEMO.md) and [submission notes](docs/SUBMISSION.md)
 
-The repository was empty at inspection on 1 November 2026. Application source, extraction endpoint, interface, storage/export utilities, tests and delivery documents were created during this session. See Git commits for the delivered changes.
-
-## Existing work and credits
-
-The SailingAI concept and discussion of an experimental Passage Desk predate this hackathon. No Passage Desk code or other pre-existing app source was imported. The supplied product brief was revised before implementation. Frameworks/libraries are credited above; icons are Lucide; fonts are DM Sans and Manrope via Google Fonts (system fallbacks apply without access). The sailing illustration is made with CSS and a Lucide sailing icon. No third-party nautical charts or marine data are used. No project licence is selected pending the owner's choice.
-
-## How Codex helped
-
-Codex implemented the observation schema and CSV export, then added checks proving that force 4 does not populate knots, invalid Beaufort values are rejected, reviewed notes appear in exports and potentially executable spreadsheet text is escaped. Test execution results are recorded in the submission notes. Codex also built the passage/review interface and server integration.
-
-## Roadmap
-
-Cloud backup, accounts, voice input, licensed port tidal predictions, GPS tracks, licensed charts, wider curated harbour coverage and marina bookings. These require separate design and validation; navigation, payments and compliance engines are outside this release.
-
-## Event delivery
-
-See [demo instructions](docs/DEMO.md) and [submission status](docs/SUBMISSION.md). [Builders Guide](https://warp-peach-ef6.notion.site/) · [Event](https://luma.com/dde-ldn-hack).
-
-## Skipper briefing
-
-Open **Skipper briefing** for live weather and visibility forecasts, modelled sea state and tidal context, and an interactive coastal explorer. The map has day/night styling, selectable harbour and marina pins, fuel/water filters, VHF contacts, facilities, official notices and tide links. The forecast overlay follows the simulated vessel and the selected forecast hour; exploring a marina does not move the vessel. Nearby distances are straight-line nautical miles, not navigable routes. Curated pins cover Cowes and Portsmouth; worldwide map browsing and demo vessel presets remain available. Forecasts are separate from skipper observations. No extra key is needed for the noncommercial Open-Meteo demo.
-
-Tidal levels are relative to global mean sea level, not chart datum: they cannot determine clearance. The app links official ADMIRALTY tide predictions and Met Office marine bulletins. Marinas.com has retired its API, so marina discovery uses directory links and official operator sources. Read [data sources, limitations and integration research](docs/DATA-SOURCES.md).
-
-## Route checkpoints, chart depths and vessel traffic
-
-The map supports up to 50 named planning checkpoints. Enable **Add checkpoints**, click the map, drag numbered markers, reorder or remove points, and export GPX. The route is saved separately in this browser. Distances are straight-line nautical miles and bearings are true; connecting lines can cross land or hazards and are not checked navigable routes.
-
-**US chart depths** adds NOAA's chart reference display with numerical soundings requested in metres. **Try San Francisco chart** moves the simulated vessel to the example. NOAA expressly excludes this display from navigation use. UK and worldwide licensed chart coverage is not connected; no depth or clearance values are invented. The day/night filter affects only the general basemap, preserving the NOAA chart palette.
-
-**Boats** is one map filter for the continuous global AISstream feed, enabled by default. Configure `AISSTREAM_API_KEY` privately on the server. The collector accumulates each vessel's latest report, follows the viewed map area and refreshes the display every five seconds. It is bounded to 5,000 recent vessels and a 250 NM radius, with visible limits. Coverage is incomplete. See [forecast and boat details](docs/PASSAGE-CONDITIONS.md) and [chart and AIS sources](docs/CHARTS-AND-AIS.md).
-
-## Almanac and worldwide harbour discovery
-
-The **Almanac & tides** tab sits beside **Marinas**. Enter a published high/low-water time, optional height, datum and source. It produces an exact dated UTC HW−6 through HW+6 worksheet, with editable notes and CSV/copy/print. It never generates hourly tide heights, stream rates or clearance. NOAA import supplies actual H/L events for two named US stations; choose each event explicitly. UK predictions remain a manual published-source workflow pending suitable API credentials/licensing. The Reeds 2026 link opens the publisher's paid digital edition, not a copied book.
-
-Use **Search this area** to look for community harbours/marinas around the map centre. When public Overpass providers are unavailable, the app clearly switches to a bundled 1,081-port Natural Earth reference gazetteer. This gives worldwide port discovery, not every marina or precise entrance location. See [coverage and provider details](docs/WORLDWIDE-DISCOVERY.md).
+[Hackathon event](https://luma.com/dde-ldn-hack) · [Builders Guide](https://warp-peach-ef6.notion.site/)
