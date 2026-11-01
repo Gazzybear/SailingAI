@@ -6,6 +6,12 @@
 
 **Repository:** https://github.com/Gazzybear/SailingAI
 
+**Publication status:** Source is committed locally. Push was attempted and rejected by GitHub with invalid username/token authentication. The remote repository has not been updated. Restore GitHub Git authentication, then run:
+
+```powershell
+git -C "C:\Users\gaz85\OneDrive\Documents\AI\Hackathon\SailingAI" push -u origin main
+```
+
 **Team:** Pending user-supplied names (solo or up to four people). Contact email belongs in the organiser's form/private handoff, not this public file.
 
 **Deadline:** 17:00 GMT, 1 November 2026. One submission per team. Submission route and opening-brief changes deferred by the user.
@@ -30,4 +36,4 @@
 
 ## Readiness
 
-Core application journey verified; remaining verification limits are listed above. Submission package ready: no (video and team details outstanding). Submission accepted: no submission attempted.
+Core application journey verified; remaining verification limits are listed above. Submission package ready: no (GitHub publication, video and team details outstanding). Submission accepted: no submission attempted.
