@@ -9,7 +9,7 @@ import type { Position } from "@/lib/briefing";
 import "leaflet/dist/leaflet.css";
 
 export type MapTarget = Position & { zoom: number; revision: number };
-export type DepthLayer = "off" | "uk" | "us";
+export type DepthLayer = "off" | "uk" | "us" | "admiralty";
 type DepthReading = Position & {
   status: "loading" | "ready" | "empty" | "error";
   elevation?: number;
@@ -262,7 +262,9 @@ export default function MapCanvas({
     let tileErrors = 0;
     let cancelled = false;
     const options: Leaflet.WMSOptions & { display_params?: string } =
-      depthLayer === "uk"
+      depthLayer === "admiralty"
+        ? { layers: "15,11,0", format: "image/png", transparent: true, version: "1.3.0", tileSize: 512, updateWhenIdle: true, keepBuffer: 0, maxZoom: 18, zIndex: 3, attribution: "ADMIRALTY and UKHO are trademarks of the Secretary of State for Defence · trial, not for navigation" }
+        : depthLayer === "uk"
         ? {
             layers: "emodnet:mean",
             styles: "atlas_land",
@@ -295,7 +297,9 @@ export default function MapCanvas({
           };
     const layer = L.tileLayer
       .wms(
-        depthLayer === "uk"
+        depthLayer === "admiralty"
+          ? "/api/admiralty/chart"
+          : depthLayer === "uk"
           ? emodnetWms
           : "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/exts/MaritimeChartService/WMSServer",
         options,
@@ -476,10 +480,12 @@ export default function MapCanvas({
       {depthLayer !== "off" && (
         <div className="chart-layer-status" role="status">
           {chartStatus === "loading"
-            ? `Loading ${depthLayer === "uk" ? "UK seabed model" : "NOAA reference chart"}…`
+            ? `Loading ${depthLayer === "admiralty" ? "ADMIRALTY trial chart" : depthLayer === "uk" ? "UK seabed model" : "NOAA reference chart"}…`
             : chartStatus === "error"
-              ? "Some chart tiles failed to load. Depth coverage is incomplete."
-              : depthLayer === "uk"
+              ? (depthLayer === "admiralty" ? "ADMIRALTY returned no usable chart, or the trial is unavailable. Base map is not a nautical chart." : "Some chart tiles failed to load. Depth coverage is incomplete.")
+              : depthLayer === "admiralty"
+                ? "ADMIRALTY trial · south coast only · not up to date · not for navigation"
+                : depthLayer === "uk"
                 ? "EMODnet DTM 2024 · coarse seabed model · not for navigation"
                 : "NOAA reference display · depth soundings in metres · US coverage only"}
         </div>

@@ -304,6 +304,7 @@ export default function VesselMap({
             <option value="off">Off</option>
             <option value="uk">UK seabed · EMODnet</option>
             <option value="us">US chart · NOAA</option>
+            <option value="admiralty">UK chart · ADMIRALTY trial</option>
           </select>
         </label>
         <button
@@ -341,6 +342,7 @@ export default function VesselMap({
             </a>
           </p>
         )}
+        {depthLayer === "admiralty" && (<p>Local developer trial for England’s south coast. Charts are not up to date and are not for navigation. Zoom in for soundings where available. The provider returned blank images during verification on 1 November 2026; a blank area is missing chart data, not safe water. Changing this filter keeps your vessel and map position.</p>)}
         {depthLayer === "us" && (
           <p>
             US waters only. Depth soundings are requested in metres from this
@@ -360,7 +362,7 @@ export default function VesselMap({
         <summary>Why isn’t the full UK / worldwide nautical chart available?</summary>
         <p>The NOAA chart layer covers US waters. UK seabed shading is a coarse EMODnet depth model, not the same chart product.</p>
         <p><a href="https://admiraltyapi.developer.azure-api.net/discovery-api-instructions" target="_blank" rel="noreferrer">ADMIRALTY’s free developer trial</a> has real chart styling for England’s south coast, but requires a subscription key and its charts are not up to date or routinely updated. Current full coverage uses licensed AVCS Online access.</p>
-        <p><a href="https://developer.garmin.com/marine-charts/web/" target="_blank" rel="noreferrer">Navionics worldwide charts</a> require a developer key. The free Standard viewer prohibits our route and boat overlays; the paid Enhanced service permits them. Neither chart service is connected here.</p>
+        <p><a href="https://developer.garmin.com/marine-charts/web/" target="_blank" rel="noreferrer">Navionics worldwide charts</a> require a developer key. The free Standard viewer prohibits our route and boat overlays; the paid Enhanced service permits them. Navionics is not connected. The ADMIRALTY trial filter is configured for local testing; its provider currently returns blank chart images.</p>
       </details>
       {route.editing && (
         <p className="route-editing-message">

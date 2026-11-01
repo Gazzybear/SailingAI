@@ -35,3 +35,14 @@ The existing EMODnet UK layer is a coarse seabed model and must not be relabelle
 Checkpoint coordinates are validated (map latitude±85°, longitude±180°), stored in an independent versioned browser record and capped at 50 points. GPX exports escape XML and identify the route as unverified. Great-circle distances use nautical miles; bearings are true. Zero-length/antipodal legs have no invented bearing. Date-line display segments wrap across the shortest longitude boundary without changing the exported checkpoints.
 
 Lines are straight joins and are not checked against land, depths, charted dangers, traffic separation, closures or local regulations. No routing engine or safety/clearance approval is claimed.
+
+
+## ADMIRALTY Discovery trial — verified 1 November 2026
+
+The map now has a UK chart / ADMIRALTY trial filter. Configure `ADMIRALTY_API_KEY` and `ADMIRALTY_TRIAL_ENABLED=true` privately in `.env.local` after accepting the provider terms. The adapter permits only local-host, same-origin requests, keeps the key in the server request header, disables caching, and limits requests to 25 per 30 seconds. Do not deploy this trial as a public chart service or redistribute its imagery.
+
+The subscription authenticated successfully: GetCapabilities returned the WMS layer list. However, GetMap returned entirely transparent PNGs for the Solent, a broader south-coast view, and the documented sample bounding box. A successful HTTP status therefore does **not** demonstrate working chart coverage. The adapter rejects these blank responses and the map displays an unavailable message instead of claiming nautical chart coverage. Provider assistance is needed to establish why this trial subscription has no rendered chart content.
+
+Official instructions: https://admiraltyapi.developer.azure-api.net/discovery-api-instructions
+Endpoint: https://admiraltyapi.azure-api.net/avcso-disco/WMSServer
+Trial coverage is limited to England’s south coast and is not up to date or routinely updated. It is not for navigation. ADMIRALTY and UKHO are trademarks of the Secretary of State for Defence.
