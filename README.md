@@ -44,7 +44,7 @@ Records use versioned localStorage in the current browser and origin. They do no
 
 AI preparation sends the note to OpenAI. The app does not log request bodies, does not send passage/crew metadata unnecessarily and requests `store:false`; this is not a claim of zero retention by the API provider. Do not enter private or sensitive information unnecessarily.
 
-No offline reopening guarantee, multi-device sync, GPS, charts or live weather. Time-only observations remain as written until the skipper confirms an observation date/time in Europe/London. Ambiguous DST times are rejected. Untimed entries are grouped after timed entries. Native modal keyboard focus trapping and broader accessibility auditing remain follow-up work.
+No offline reopening guarantee, multi-device sync, GPS or licensed nautical charts. A separate skipper briefing now provides real weather/marine forecasts and a simulated vessel map; see the marine data section below. Time-only observations remain as written until the skipper confirms an observation date/time in Europe/London. Ambiguous DST times are rejected. Untimed entries are grouped after timed entries. Native modal keyboard focus trapping and broader accessibility auditing remain follow-up work.
 
 ## Safety
 
@@ -68,8 +68,14 @@ Codex implemented the observation schema and CSV export, then added checks provi
 
 ## Roadmap
 
-Cloud backup, accounts, voice input, source-attributed marine forecasts/tides, GPS tracks, licensed charts, marina information and bookings. These require separate design and validation; navigation, payments and compliance engines are outside this release.
+Cloud backup, accounts, voice input, licensed port tidal predictions, GPS tracks, licensed charts, wider curated harbour coverage and marina bookings. These require separate design and validation; navigation, payments and compliance engines are outside this release.
 
 ## Event delivery
 
 See [demo instructions](docs/DEMO.md) and [submission status](docs/SUBMISSION.md). [Builders Guide](https://warp-peach-ef6.notion.site/) · [Event](https://luma.com/dde-ldn-hack).
+
+## Skipper briefing
+
+Open **Skipper briefing** for live weather, visibility, sea-state measurements, modelled tidal context, a simulated vessel map and source-checked Cowes/Gosport marina guidance. Forecasts are separate from skipper observations. Choose a map preset/custom position and an hourly valid time. No extra key is needed for the noncommercial Open-Meteo demo.
+
+Tidal levels are relative to global mean sea level, not chart datum: they cannot determine clearance. The app links official ADMIRALTY tide predictions and Met Office marine bulletins. Marinas.com has retired its API, so marina discovery uses directory links and official operator sources. Read [data sources, limitations and integration research](docs/DATA-SOURCES.md).

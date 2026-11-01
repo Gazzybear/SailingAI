@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import SkipperBriefing from "./components/SkipperBriefing";
 import { useEffect, useRef, useState } from "react";
 import {
   Anchor,
@@ -67,6 +68,7 @@ function download(name: string, body: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export default function Home() {
+  const [deskView, setDeskView] = useState<"briefing" | "logbook">("briefing");
   const [passages, setPassages] = useState<Passage[]>([]),
     [selected, setSelected] = useState(""),
     [ready, setReady] = useState(false),
@@ -123,6 +125,7 @@ export default function Home() {
     }
   }
   function changePassage(id: string) {
+    setDeskView("logbook");
     generation.current++;
     setSelected(id);
     setDraft(null);
@@ -308,7 +311,13 @@ export default function Home() {
           Sailing<span>AI</span>
         </Link>
         <div className="workspace-label">YOUR WORKSPACE</div>
-        <button className="side-link active" onClick={() => setTab("write")}>
+        <button
+          className="side-link active"
+          onClick={() => {
+            setDeskView("logbook");
+            setTab("write");
+          }}
+        >
           <Compass size={18} />
           Passage desk
           <span className="small-dot" />
@@ -316,8 +325,10 @@ export default function Home() {
         <button
           className="side-link"
           onClick={() => {
-            if (p) setTab("log");
-            else setNotice("Create a passage to open its logbook.");
+            if (p) {
+              setDeskView("logbook");
+              setTab("log");
+            } else setNotice("Create a passage to open its logbook.");
           }}
         >
           <FileText size={18} />
@@ -434,474 +445,516 @@ export default function Home() {
               Download recovery copy
             </button>
           )}
-          {!p ? (
-            <>
-              <section className="welcome">
-                <div className="welcome-copy">
-                  <span className="pill">
-                    <Waves size={14} />
-                    THE LOGBOOK, REIMAGINED
-                  </span>
-                  <h2>
-                    Less paperwork.
-                    <br />
-                    More horizon.
-                  </h2>
-                  <p>
-                    Turn your everyday sailing notes into a structured logbook.
-                    You bring the observations. SailingAI helps put them in
-                    order.
-                  </p>
-                  <button
-                    className="button primary"
-                    onClick={() => {
-                      setForm(freshPassage());
-                      setCreating(true);
-                    }}
-                  >
-                    Start your first passage
-                    <ArrowRight size={17} />
-                  </button>
-                  <button className="text-button" onClick={samplePassage}>
-                    Or explore a sample passage <ArrowRight size={14} />
-                  </button>
-                </div>
-                <div
-                  className="sea-art"
-                  aria-label="Illustration of a sailing yacht on calm water"
-                  role="img"
-                >
-                  <div className="sun" />
-                  <div className="island" />
-                  <Sailboat className="hero-boat" strokeWidth={0.7} />
-                  <div className="sea-line line-one" />
-                  <div className="sea-line line-two" />
-                  <div className="coordinates">
-                    SOLENT, UNITED KINGDOM
-                    <br />
-                    <span>A new page for every passage.</span>
-                  </div>
-                </div>
-              </section>
-              <div className="feature-grid">
-                {[
-                  [
-                    Compass,
-                    "01",
-                    "Start a passage",
-                    "Give your journey a home.",
-                  ],
-                  [
-                    Sparkles,
-                    "02",
-                    "Capture the moment",
-                    "Plain English becomes clear details.",
-                  ],
-                  [
-                    FileText,
-                    "03",
-                    "Keep your record",
-                    "Review, save and take it with you.",
-                  ],
-                ].map(([Icon, n, title, copy]) => (
-                  <div className="feature" key={String(n)}>
-                    <div className="feature-top">
-                      {typeof Icon !== "string" && <Icon size={22} />}
-                      <span>{String(n)}</span>
-                    </div>
-                    <h3>{String(title)}</h3>
-                    <p>{String(copy)}</p>
-                  </div>
-                ))}
-              </div>
-            </>
+          <div className="workspace-switch">
+            <button
+              className={
+                "button " + (deskView === "briefing" ? "selected" : "")
+              }
+              onClick={() => setDeskView("briefing")}
+            >
+              Skipper briefing
+            </button>
+            <button
+              className={"button " + (deskView === "logbook" ? "selected" : "")}
+              onClick={() => setDeskView("logbook")}
+            >
+              Passages & logbook
+            </button>
+          </div>
+          {deskView === "briefing" ? (
+            <SkipperBriefing vessel={p?.vessel} passageDate={p?.date} />
           ) : (
             <>
-              <section className="passage-banner">
-                <div>
-                  <div className="eyebrow light">
-                    CURRENT PASSAGE · {p.vessel}
-                  </div>
-                  <h2>
-                    {p.departure.split(",")[0]} <ArrowRight size={24} />{" "}
-                    {p.destination.split(",")[0]}
-                  </h2>
-                  <p>
-                    {p.date} {p.time && `· Planned departure ${p.time}`} ·
-                    Europe/London
-                  </p>
-                </div>
-                <div className="passage-badge">
-                  <Sailboat size={27} />
-                  <span>
-                    {p.entries.length}{" "}
-                    {p.entries.length === 1 ? "entry" : "entries"} recorded
-                  </span>
-                </div>
-              </section>
-              <div className="desk-grid">
-                <section className="desk-main">
-                  <div className="tabs">
-                    <button
-                      className={tab === "write" ? "chosen" : ""}
-                      onClick={() => setTab("write")}
+              {!p ? (
+                <>
+                  <section className="welcome">
+                    <div className="welcome-copy">
+                      <span className="pill">
+                        <Waves size={14} />
+                        THE LOGBOOK, REIMAGINED
+                      </span>
+                      <h2>
+                        Less paperwork.
+                        <br />
+                        More horizon.
+                      </h2>
+                      <p>
+                        Turn your everyday sailing notes into a structured
+                        logbook. You bring the observations. SailingAI helps put
+                        them in order.
+                      </p>
+                      <button
+                        className="button primary"
+                        onClick={() => {
+                          setForm(freshPassage());
+                          setCreating(true);
+                        }}
+                      >
+                        Start your first passage
+                        <ArrowRight size={17} />
+                      </button>
+                      <button className="text-button" onClick={samplePassage}>
+                        Or explore a sample passage <ArrowRight size={14} />
+                      </button>
+                    </div>
+                    <div
+                      className="sea-art"
+                      aria-label="Illustration of a sailing yacht on calm water"
+                      role="img"
                     >
-                      <Sparkles size={16} />
-                      New observation
-                    </button>
-                    <button
-                      className={tab === "log" ? "chosen" : ""}
-                      onClick={() => setTab("log")}
-                    >
-                      <FileText size={16} />
-                      Passage log <span>{p.entries.length}</span>
-                    </button>
+                      <div className="sun" />
+                      <div className="island" />
+                      <Sailboat className="hero-boat" strokeWidth={0.7} />
+                      <div className="sea-line line-one" />
+                      <div className="sea-line line-two" />
+                      <div className="coordinates">
+                        SOLENT, UNITED KINGDOM
+                        <br />
+                        <span>A new page for every passage.</span>
+                      </div>
+                    </div>
+                  </section>
+                  <div className="feature-grid">
+                    {[
+                      [
+                        Compass,
+                        "01",
+                        "Start a passage",
+                        "Give your journey a home.",
+                      ],
+                      [
+                        Sparkles,
+                        "02",
+                        "Capture the moment",
+                        "Plain English becomes clear details.",
+                      ],
+                      [
+                        FileText,
+                        "03",
+                        "Keep your record",
+                        "Review, save and take it with you.",
+                      ],
+                    ].map(([Icon, n, title, copy]) => (
+                      <div className="feature" key={String(n)}>
+                        <div className="feature-top">
+                          {typeof Icon !== "string" && <Icon size={22} />}
+                          <span>{String(n)}</span>
+                        </div>
+                        <h3>{String(title)}</h3>
+                        <p>{String(copy)}</p>
+                      </div>
+                    ))}
                   </div>
-                  {tab === "write" ? (
-                    draft ? (
-                      <section className="editor">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">
-                              {draft.source === "sample"
-                                ? "SAMPLE DATA · NO LIVE AI REQUEST"
-                                : draft.source === "openai"
-                                  ? "AI-PREPARED · REQUIRES SKIPPER REVIEW"
-                                  : "MANUAL ENTRY"}
-                            </span>
-                            <h2>Make it your record.</h2>
-                          </div>
-                          <button
-                            className="icon-button"
-                            aria-label="Cancel review"
-                            onClick={() => setDraft(null)}
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                        <details open>
-                          <summary>Original observation</summary>
-                          <p className="original">
-                            {draft.original ||
-                              "No original note — manual entry."}
-                          </p>
-                        </details>
-                        {draft.values.warnings.length > 0 && (
-                          <div className="review-warning">
-                            {draft.values.warnings.map((w, i) => (
-                              <p key={i}>{w}</p>
-                            ))}
-                          </div>
-                        )}
-                        <label className="field full">
-                          Confirmed observation date and time
-                          <input
-                            ref={observationDate}
-                            type="datetime-local"
-                            value={draft.observedAt}
-                            onChange={(e) =>
-                              setDraft({ ...draft, observedAt: e.target.value })
-                            }
-                          />
-                          <small>
-                            Europe/London. Optional; confirm the date for
-                            overnight passages. Untimed entries remain untimed.
-                          </small>
-                        </label>
-                        <div className="review-grid">
-                          {Object.entries(fields).map(([key, label]) => (
-                            <label
-                              className={
-                                "field " + (key === "notes" ? "full" : "")
-                              }
-                              key={key}
-                            >
-                              {label}
-                              <input
-                                type={
-                                  [
-                                    "windKnots",
-                                    "beaufort",
-                                    "heading",
-                                    "cog",
-                                    "stw",
-                                    "sog",
-                                  ].includes(key)
-                                    ? "number"
-                                    : "text"
-                                }
-                                step="any"
-                                value={
-                                  draft.values[key as keyof typeof fields] ?? ""
-                                }
-                                placeholder="Not recorded"
-                                onChange={(e) =>
-                                  updateField(
-                                    key as keyof typeof fields,
-                                    e.target.value,
-                                  )
-                                }
-                              />
-                            </label>
-                          ))}
-                        </div>
-                        {draft.aiDraft && (
-                          <details>
-                            <summary>View original prepared values</summary>
-                            <pre>{JSON.stringify(draft.aiDraft, null, 2)}</pre>
-                          </details>
-                        )}
-                        <div className="editor-actions">
-                          <button className="button primary" onClick={save}>
-                            <Check size={17} />
-                            Save reviewed entry
-                          </button>
-                          <button
-                            className="button"
-                            onClick={() => setDraft(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </section>
-                    ) : (
-                      <section className="composer">
-                        <div className="section-heading">
-                          <div>
-                            <span className="eyebrow">IN YOUR OWN WORDS</span>
-                            <h2>What’s happening on board?</h2>
-                          </div>
-                          <Wind className="muted" size={25} />
-                        </div>
-                        <p>
-                          Wind, weather, a change of course, or simply how the
-                          crew are doing.
-                        </p>
-                        <label className="sr-only" htmlFor="observation">
-                          Sailing observation
-                        </label>
-                        <textarea
-                          id="observation"
-                          maxLength={4000}
-                          value={note}
-                          onChange={(e) => {
-                            generation.current++;
-                            setNote(e.target.value);
-                          }}
-                          placeholder={
-                            "“Departed Cowes at 10:15. Wind easterly force 4, sea slight, good visibility. All crew well.”"
-                          }
-                        />
-                        <div className="note-meta">
-                          <span>
-                            You observe. You review. You’re in control.
-                          </span>
-                          <span>{note.length}/4000</span>
-                        </div>
-                        <div className="composer-actions">
-                          <button
-                            className="button primary"
-                            disabled={busy || !note.trim()}
-                            onClick={extract}
-                          >
-                            <Sparkles size={16} />
-                            {busy
-                              ? "Preparing your entry…"
-                              : "Prepare log entry"}
-                          </button>
-                          <button
-                            className="text-button"
-                            disabled={busy}
-                            onClick={() => begin("manual")}
-                          >
-                            Add entry manually
-                            <ArrowRight size={15} />
-                          </button>
-                        </div>
-                        <p className="privacy">
-                          AI preparation sends this note to OpenAI. Nothing is
-                          saved until you review and approve.
-                        </p>
-                        <div className="sample-box">
-                          <div>
-                            <span className="eyebrow">
-                              TAKE IT FOR A TEST SAIL
-                            </span>
-                            <p>Try a fixed example. No API key needed.</p>
-                          </div>
-                          <button
-                            className="button"
-                            disabled={busy}
-                            onClick={() => {
-                              setNote(sampleNote);
-                              begin("sample", sampleReading, sampleNote);
-                            }}
-                          >
-                            Review sample
-                            <ArrowRight size={14} />
-                          </button>
-                        </div>
-                      </section>
-                    )
-                  ) : (
-                    <section className="log">
-                      <div className="section-heading">
-                        <div>
-                          <span className="eyebrow">THE STORY SO FAR</span>
-                          <h2>Passage log</h2>
-                        </div>
+                </>
+              ) : (
+                <>
+                  <section className="passage-banner">
+                    <div>
+                      <div className="eyebrow light">
+                        CURRENT PASSAGE · {p.vessel}
+                      </div>
+                      <h2>
+                        {p.departure.split(",")[0]} <ArrowRight size={24} />{" "}
+                        {p.destination.split(",")[0]}
+                      </h2>
+                      <p>
+                        {p.date} {p.time && `· Planned departure ${p.time}`} ·
+                        Europe/London
+                      </p>
+                    </div>
+                    <div className="passage-badge">
+                      <Sailboat size={27} />
+                      <span>
+                        {p.entries.length}{" "}
+                        {p.entries.length === 1 ? "entry" : "entries"} recorded
+                      </span>
+                    </div>
+                  </section>
+                  <div className="desk-grid">
+                    <section className="desk-main">
+                      <div className="tabs">
                         <button
-                          className="button"
-                          disabled={!p.entries.length}
-                          onClick={() =>
-                            download(
-                              "sailingai-log.csv",
-                              exportCSV(p),
-                              "text/csv;charset=utf-8",
-                            )
-                          }
+                          className={tab === "write" ? "chosen" : ""}
+                          onClick={() => {
+                            setDeskView("logbook");
+                            setTab("write");
+                          }}
                         >
-                          <ArrowDownToLine size={16} />
-                          Export CSV
+                          <Sparkles size={16} />
+                          New observation
+                        </button>
+                        <button
+                          className={tab === "log" ? "chosen" : ""}
+                          onClick={() => setTab("log")}
+                        >
+                          <FileText size={16} />
+                          Passage log <span>{p.entries.length}</span>
                         </button>
                       </div>
-                      {!p.entries.length ? (
-                        <div className="empty-log">
-                          <FileText size={32} />
-                          <h3>A fresh page awaits.</h3>
-                          <p>Your reviewed observations will appear here.</p>
-                          <button
-                            className="text-button"
-                            onClick={() => setTab("write")}
-                          >
-                            Add your first observation
-                            <ArrowRight size={15} />
-                          </button>
-                        </div>
-                      ) : (
-                        orderEntries(p.entries).map((entry) => (
-                          <article className="log-entry" key={entry.id}>
-                            <div className="entry-top">
-                              <span className="entry-time">
-                                {entry.observedAt
-                                  ? entry.observedAt.replace("T", " · ")
-                                  : "Observation time not recorded"}
-                              </span>
-                              <span className="source">
-                                {entry.source === "sample"
-                                  ? "Sample · no live AI"
-                                  : entry.source === "openai"
-                                    ? "AI prepared · reviewed"
-                                    : "Manual entry"}
-                              </span>
-                            </div>
-                            <h3>{entry.values.location || "On passage"}</h3>
-                            <div className="readings">
-                              {entry.values.windDirection && (
-                                <span>
-                                  <Wind size={14} />
-                                  {entry.values.windDirection}
-                                  {entry.values.beaufort !== null
-                                    ? ` · F${entry.values.beaufort}`
-                                    : ""}
+                      {tab === "write" ? (
+                        draft ? (
+                          <section className="editor">
+                            <div className="section-heading">
+                              <div>
+                                <span className="eyebrow">
+                                  {draft.source === "sample"
+                                    ? "SAMPLE DATA · NO LIVE AI REQUEST"
+                                    : draft.source === "openai"
+                                      ? "AI-PREPARED · REQUIRES SKIPPER REVIEW"
+                                      : "MANUAL ENTRY"}
                                 </span>
-                              )}
-                              {entry.values.seaState && (
-                                <span>
-                                  <Waves size={14} />
-                                  {entry.values.seaState}
-                                </span>
-                              )}
-                              {entry.values.visibility && (
-                                <span>
-                                  Visibility: {entry.values.visibility}
-                                </span>
-                              )}
-                            </div>
-                            <p>{entry.values.notes}</p>
-                            <details>
-                              <summary>
-                                All saved details and original note
-                              </summary>
-                              <dl>
-                                {Object.entries(fields).map(([key, label]) => (
-                                  <div key={key}>
-                                    <dt>{label}</dt>
-                                    <dd>
-                                      {entry.values[
-                                        key as keyof typeof fields
-                                      ] ?? "Not recorded"}
-                                    </dd>
-                                  </div>
-                                ))}
-                              </dl>
-                              <p className="original">{entry.original}</p>
-                              {entry.values.warnings.map((w, i) => (
-                                <p key={i}>{w}</p>
-                              ))}
-                              <small>
-                                Recorded {entry.createdAt} · Last edited{" "}
-                                {entry.updatedAt}
-                              </small>
-                            </details>
-                            <div className="entry-actions">
-                              <button
-                                className="text-button"
-                                onClick={() => edit(entry)}
-                              >
-                                Edit entry
-                              </button>
+                                <h2>Make it your record.</h2>
+                              </div>
                               <button
                                 className="icon-button"
-                                aria-label="Delete entry"
-                                onClick={() => remove(entry.id)}
+                                aria-label="Cancel review"
+                                onClick={() => setDraft(null)}
                               >
-                                <Trash2 size={16} />
+                                <X size={18} />
                               </button>
                             </div>
-                          </article>
-                        ))
+                            <details open>
+                              <summary>Original observation</summary>
+                              <p className="original">
+                                {draft.original ||
+                                  "No original note — manual entry."}
+                              </p>
+                            </details>
+                            {draft.values.warnings.length > 0 && (
+                              <div className="review-warning">
+                                {draft.values.warnings.map((w, i) => (
+                                  <p key={i}>{w}</p>
+                                ))}
+                              </div>
+                            )}
+                            <label className="field full">
+                              Confirmed observation date and time
+                              <input
+                                ref={observationDate}
+                                type="datetime-local"
+                                value={draft.observedAt}
+                                onChange={(e) =>
+                                  setDraft({
+                                    ...draft,
+                                    observedAt: e.target.value,
+                                  })
+                                }
+                              />
+                              <small>
+                                Europe/London. Optional; confirm the date for
+                                overnight passages. Untimed entries remain
+                                untimed.
+                              </small>
+                            </label>
+                            <div className="review-grid">
+                              {Object.entries(fields).map(([key, label]) => (
+                                <label
+                                  className={
+                                    "field " + (key === "notes" ? "full" : "")
+                                  }
+                                  key={key}
+                                >
+                                  {label}
+                                  <input
+                                    type={
+                                      [
+                                        "windKnots",
+                                        "beaufort",
+                                        "heading",
+                                        "cog",
+                                        "stw",
+                                        "sog",
+                                      ].includes(key)
+                                        ? "number"
+                                        : "text"
+                                    }
+                                    step="any"
+                                    value={
+                                      draft.values[
+                                        key as keyof typeof fields
+                                      ] ?? ""
+                                    }
+                                    placeholder="Not recorded"
+                                    onChange={(e) =>
+                                      updateField(
+                                        key as keyof typeof fields,
+                                        e.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                            {draft.aiDraft && (
+                              <details>
+                                <summary>View original prepared values</summary>
+                                <pre>
+                                  {JSON.stringify(draft.aiDraft, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                            <div className="editor-actions">
+                              <button className="button primary" onClick={save}>
+                                <Check size={17} />
+                                Save reviewed entry
+                              </button>
+                              <button
+                                className="button"
+                                onClick={() => setDraft(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </section>
+                        ) : (
+                          <section className="composer">
+                            <div className="section-heading">
+                              <div>
+                                <span className="eyebrow">
+                                  IN YOUR OWN WORDS
+                                </span>
+                                <h2>What’s happening on board?</h2>
+                              </div>
+                              <Wind className="muted" size={25} />
+                            </div>
+                            <p>
+                              Wind, weather, a change of course, or simply how
+                              the crew are doing.
+                            </p>
+                            <label className="sr-only" htmlFor="observation">
+                              Sailing observation
+                            </label>
+                            <textarea
+                              id="observation"
+                              maxLength={4000}
+                              value={note}
+                              onChange={(e) => {
+                                generation.current++;
+                                setNote(e.target.value);
+                              }}
+                              placeholder={
+                                "“Departed Cowes at 10:15. Wind easterly force 4, sea slight, good visibility. All crew well.”"
+                              }
+                            />
+                            <div className="note-meta">
+                              <span>
+                                You observe. You review. You’re in control.
+                              </span>
+                              <span>{note.length}/4000</span>
+                            </div>
+                            <div className="composer-actions">
+                              <button
+                                className="button primary"
+                                disabled={busy || !note.trim()}
+                                onClick={extract}
+                              >
+                                <Sparkles size={16} />
+                                {busy
+                                  ? "Preparing your entry…"
+                                  : "Prepare log entry"}
+                              </button>
+                              <button
+                                className="text-button"
+                                disabled={busy}
+                                onClick={() => begin("manual")}
+                              >
+                                Add entry manually
+                                <ArrowRight size={15} />
+                              </button>
+                            </div>
+                            <p className="privacy">
+                              AI preparation sends this note to OpenAI. Nothing
+                              is saved until you review and approve.
+                            </p>
+                            <div className="sample-box">
+                              <div>
+                                <span className="eyebrow">
+                                  TAKE IT FOR A TEST SAIL
+                                </span>
+                                <p>Try a fixed example. No API key needed.</p>
+                              </div>
+                              <button
+                                className="button"
+                                disabled={busy}
+                                onClick={() => {
+                                  setNote(sampleNote);
+                                  begin("sample", sampleReading, sampleNote);
+                                }}
+                              >
+                                Review sample
+                                <ArrowRight size={14} />
+                              </button>
+                            </div>
+                          </section>
+                        )
+                      ) : (
+                        <section className="log">
+                          <div className="section-heading">
+                            <div>
+                              <span className="eyebrow">THE STORY SO FAR</span>
+                              <h2>Passage log</h2>
+                            </div>
+                            <button
+                              className="button"
+                              disabled={!p.entries.length}
+                              onClick={() =>
+                                download(
+                                  "sailingai-log.csv",
+                                  exportCSV(p),
+                                  "text/csv;charset=utf-8",
+                                )
+                              }
+                            >
+                              <ArrowDownToLine size={16} />
+                              Export CSV
+                            </button>
+                          </div>
+                          {!p.entries.length ? (
+                            <div className="empty-log">
+                              <FileText size={32} />
+                              <h3>A fresh page awaits.</h3>
+                              <p>
+                                Your reviewed observations will appear here.
+                              </p>
+                              <button
+                                className="text-button"
+                                onClick={() => {
+                                  setDeskView("logbook");
+                                  setTab("write");
+                                }}
+                              >
+                                Add your first observation
+                                <ArrowRight size={15} />
+                              </button>
+                            </div>
+                          ) : (
+                            orderEntries(p.entries).map((entry) => (
+                              <article className="log-entry" key={entry.id}>
+                                <div className="entry-top">
+                                  <span className="entry-time">
+                                    {entry.observedAt
+                                      ? entry.observedAt.replace("T", " · ")
+                                      : "Observation time not recorded"}
+                                  </span>
+                                  <span className="source">
+                                    {entry.source === "sample"
+                                      ? "Sample · no live AI"
+                                      : entry.source === "openai"
+                                        ? "AI prepared · reviewed"
+                                        : "Manual entry"}
+                                  </span>
+                                </div>
+                                <h3>{entry.values.location || "On passage"}</h3>
+                                <div className="readings">
+                                  {entry.values.windDirection && (
+                                    <span>
+                                      <Wind size={14} />
+                                      {entry.values.windDirection}
+                                      {entry.values.beaufort !== null
+                                        ? ` · F${entry.values.beaufort}`
+                                        : ""}
+                                    </span>
+                                  )}
+                                  {entry.values.seaState && (
+                                    <span>
+                                      <Waves size={14} />
+                                      {entry.values.seaState}
+                                    </span>
+                                  )}
+                                  {entry.values.visibility && (
+                                    <span>
+                                      Visibility: {entry.values.visibility}
+                                    </span>
+                                  )}
+                                </div>
+                                <p>{entry.values.notes}</p>
+                                <details>
+                                  <summary>
+                                    All saved details and original note
+                                  </summary>
+                                  <dl>
+                                    {Object.entries(fields).map(
+                                      ([key, label]) => (
+                                        <div key={key}>
+                                          <dt>{label}</dt>
+                                          <dd>
+                                            {entry.values[
+                                              key as keyof typeof fields
+                                            ] ?? "Not recorded"}
+                                          </dd>
+                                        </div>
+                                      ),
+                                    )}
+                                  </dl>
+                                  <p className="original">{entry.original}</p>
+                                  {entry.values.warnings.map((w, i) => (
+                                    <p key={i}>{w}</p>
+                                  ))}
+                                  <small>
+                                    Recorded {entry.createdAt} · Last edited{" "}
+                                    {entry.updatedAt}
+                                  </small>
+                                </details>
+                                <div className="entry-actions">
+                                  <button
+                                    className="text-button"
+                                    onClick={() => edit(entry)}
+                                  >
+                                    Edit entry
+                                  </button>
+                                  <button
+                                    className="icon-button"
+                                    aria-label="Delete entry"
+                                    onClick={() => remove(entry.id)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </article>
+                            ))
+                          )}
+                        </section>
                       )}
                     </section>
-                  )}
-                </section>
-                <aside className="desk-aside">
-                  <span className="mini-icon">
-                    <Anchor size={21} />
-                  </span>
-                  <h3>
-                    A good log starts
-                    <br />
-                    with your observations.
-                  </h3>
-                  <p>Record what you know. Leave the rest open.</p>
-                  <div className="tip">
-                    <span>01</span>
-                    <p>
-                      Include the time, location and conditions when you have
-                      them.
-                    </p>
+                    <aside className="desk-aside">
+                      <span className="mini-icon">
+                        <Anchor size={21} />
+                      </span>
+                      <h3>
+                        A good log starts
+                        <br />
+                        with your observations.
+                      </h3>
+                      <p>Record what you know. Leave the rest open.</p>
+                      <div className="tip">
+                        <span>01</span>
+                        <p>
+                          Include the time, location and conditions when you
+                          have them.
+                        </p>
+                      </div>
+                      <div className="tip">
+                        <span>02</span>
+                        <p>
+                          Check every prepared field. Missing details stay
+                          unrecorded.
+                        </p>
+                      </div>
+                      <div className="tip">
+                        <span>03</span>
+                        <p>
+                          Save your reviewed entry, then export a copy for
+                          safekeeping.
+                        </p>
+                      </div>
+                      <div className="aside-footer">
+                        <Flag size={16} />
+                        YOUR PASSAGE, YOUR RECORD
+                      </div>
+                    </aside>
                   </div>
-                  <div className="tip">
-                    <span>02</span>
-                    <p>
-                      Check every prepared field. Missing details stay
-                      unrecorded.
-                    </p>
-                  </div>
-                  <div className="tip">
-                    <span>03</span>
-                    <p>
-                      Save your reviewed entry, then export a copy for
-                      safekeeping.
-                    </p>
-                  </div>
-                  <div className="aside-footer">
-                    <Flag size={16} />
-                    YOUR PASSAGE, YOUR RECORD
-                  </div>
-                </aside>
-              </div>
+                </>
+              )}
             </>
           )}
           <footer>

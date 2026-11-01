@@ -20,7 +20,7 @@ git -C "C:\Users\gaz85\OneDrive\Documents\AI\Hackathon\SailingAI" push -u origin
 
 ## Verification status
 
-- Unit tests: 8 passed, covering data validation, CSV integrity, London time handling, corrupt storage rejection, disabled live calls, missing credentials and invalid request bodies.
+- Unit tests: 12 passed, covering data validation, CSV integrity, London time handling, corrupt storage rejection, disabled live calls, missing credentials and invalid request bodies.
 - TypeScript: passed initially; production builds also run TypeScript verification.
 - ESLint: passed on the final run, with the browser-only hydration exception documented and scoped to that effect.
 - Production build: passed after the timestamp fix, including TypeScript verification.
@@ -37,3 +37,7 @@ git -C "C:\Users\gaz85\OneDrive\Documents\AI\Hackathon\SailingAI" push -u origin
 ## Readiness
 
 Core application journey verified; remaining verification limits are listed above. GitHub publication complete. Submission package ready: no (video and team details outstanding). Submission accepted: no submission attempted.
+
+## Expanded skipper briefing
+
+Added at the user’s request after the core logbook: real Open-Meteo weather/marine forecasts, visibility, modelled sea-level trend, worldwide simulated map position and sourced Cowes/Gosport harbour/marina guides. The core project scope was expanded explicitly by the user. See DATA-SOURCES.md for provider/licensing research and verification. Official port high/low-water API integration requires a separate UKHO key and is not claimed complete.
