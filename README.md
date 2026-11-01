@@ -76,6 +76,6 @@ See [demo instructions](docs/DEMO.md) and [submission status](docs/SUBMISSION.md
 
 ## Skipper briefing
 
-Open **Skipper briefing** for live weather, visibility, sea-state measurements, modelled tidal context, a simulated vessel map and source-checked Cowes/Gosport marina guidance. Forecasts are separate from skipper observations. Choose a map preset/custom position and an hourly valid time. No extra key is needed for the noncommercial Open-Meteo demo.
+Open **Skipper briefing** for live weather and visibility forecasts, modelled sea state and tidal context, and an interactive coastal explorer. The map has day/night styling, selectable harbour and marina pins, fuel/water filters, VHF contacts, facilities, official notices and tide links. The forecast overlay follows the simulated vessel and the selected forecast hour; exploring a marina does not move the vessel. Nearby distances are straight-line nautical miles, not navigable routes. Curated pins cover Cowes and Portsmouth; worldwide map browsing and demo vessel presets remain available. Forecasts are separate from skipper observations. No extra key is needed for the noncommercial Open-Meteo demo.
 
 Tidal levels are relative to global mean sea level, not chart datum: they cannot determine clearance. The app links official ADMIRALTY tide predictions and Met Office marine bulletins. Marinas.com has retired its API, so marina discovery uses directory links and official operator sources. Read [data sources, limitations and integration research](docs/DATA-SOURCES.md).

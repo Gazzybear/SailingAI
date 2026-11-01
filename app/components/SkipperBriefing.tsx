@@ -139,7 +139,13 @@ export default function SkipperBriefing({
           Simulated vessel · real forecast data
         </span>
       </div>
-      <VesselMap position={position} onPositionChange={changePosition} />
+      <VesselMap
+        position={position}
+        onPositionChange={changePosition}
+        forecast={row}
+        loading={loading}
+        vessel={vessel}
+      />
       <section className="briefing-panel">
         <div className="section-heading">
           <div>
