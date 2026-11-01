@@ -1,16 +1,19 @@
 "use client";
+import { useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
   Download,
   MapPin,
   Plus,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import {
   buildLegs,
   totalDistanceNm,
   exportGPX,
+  isValidCoordinates,
   type RouteWaypoint,
 } from "@/lib/route-planner";
 import type { useRoutePlanner } from "./useRoutePlanner";
@@ -24,6 +27,26 @@ export default function RoutePlanner({
   onFocus: (point: RouteWaypoint) => void;
   onStartEditing: () => void;
 }) {
+  const [draft, setDraft] = useState<{ id: string; name: string; latitude: string; longitude: string } | null>(null);
+  const [editError, setEditError] = useState("");
+  const [deleted, setDeleted] = useState<{ point: RouteWaypoint; index: number } | null>(null);
+  function edit(point: RouteWaypoint) {
+    planner.setEditing(false);
+    setDraft({ id: point.id, name: point.name, latitude: String(point.latitude), longitude: String(point.longitude) });
+    setEditError("");
+  }
+  function save() {
+    if (!draft) return;
+    const latitude = Number(draft.latitude), longitude = Number(draft.longitude);
+    if (!draft.name.trim() || !draft.latitude.trim() || !draft.longitude.trim() || !isValidCoordinates(latitude, longitude)) {
+      setEditError("Enter a name, latitude from −85 to 85, and longitude from −180 to 180.");
+      return;
+    }
+    if (planner.update(planner.waypoints.map(point => point.id === draft.id ? { ...point, name: draft.name.trim(), latitude, longitude } : point))) {
+      setDraft(null);
+      setEditError("");
+    }
+  }
   const legs = buildLegs(planner.waypoints);
   function reorder(index: number, direction: number) {
     const next = [...planner.waypoints];
@@ -63,12 +86,14 @@ export default function RoutePlanner({
             disabled={!planner.ready}
             aria-pressed={planner.editing}
             onClick={() => {
+              setDraft(null);
+              setEditError("");
               if (!planner.editing) onStartEditing();
               planner.setEditing(!planner.editing);
             }}
           >
             <Plus size={15} />
-            {planner.editing ? "Finish editing" : "Add checkpoints"}
+            {planner.editing ? "Finish editing" : planner.waypoints.length ? "Add / move on map" : "Add checkpoints"}
           </button>
           <button
             type="button"
@@ -91,6 +116,16 @@ export default function RoutePlanner({
           {planner.error}
         </p>
       )}
+      {deleted && (
+        <div className="route-undo" role="status">
+          <span>Deleted “{deleted.point.name}”.</span>
+          <button type="button" onClick={() => {
+            const next = [...planner.waypoints];
+            next.splice(Math.min(deleted.index, next.length), 0, deleted.point);
+            if (planner.update(next)) setDeleted(null);
+          }}>Undo delete</button>
+        </div>
+      )}
       {!planner.waypoints.length ? (
         <p className="route-empty">
           Start with Add checkpoints, then tap the locations you want to
@@ -100,7 +135,7 @@ export default function RoutePlanner({
         <div className="route-checkpoints">
           {planner.waypoints.map((point, index) => (
             <div
-              key={`${point.id}:${point.latitude}:${point.longitude}`}
+              key={point.id}
               className="route-checkpoint"
             >
               <button
@@ -112,24 +147,8 @@ export default function RoutePlanner({
                 {index + 1}
               </button>
               <div>
-                <label>
-                  Checkpoint {index + 1}
-                  <input
-                    aria-label={`Name for checkpoint ${index + 1}`}
-                    defaultValue={point.name}
-                    maxLength={80}
-                    onBlur={(event) => {
-                      const name =
-                        event.target.value.trim() || `Checkpoint ${index + 1}`;
-                      if (name !== point.name)
-                        planner.update(
-                          planner.waypoints.map((p) =>
-                            p.id === point.id ? { ...p, name } : p,
-                          ),
-                        );
-                    }}
-                  />
-                </label>
+                <span className="route-checkpoint-caption">Checkpoint {index + 1}</span>
+                <strong className="route-checkpoint-name">{point.name}</strong>
                 <small>
                   {point.latitude.toFixed(5)}°, {point.longitude.toFixed(5)}°
                   {index > 0 &&
@@ -137,9 +156,11 @@ export default function RoutePlanner({
                 </small>
               </div>
               <div className="route-order">
+                <button type="button" aria-label={`Edit checkpoint ${index + 1}`} onClick={() => edit(point)}><Pencil size={14} /> Edit</button>
                 <button
                   type="button"
                   aria-label={`Move checkpoint ${index + 1} earlier`}
+                  title="Move earlier"
                   disabled={index === 0}
                   onClick={() => reorder(index, -1)}
                 >
@@ -148,6 +169,7 @@ export default function RoutePlanner({
                 <button
                   type="button"
                   aria-label={`Move checkpoint ${index + 1} later`}
+                  title="Move later"
                   disabled={index === planner.waypoints.length - 1}
                   onClick={() => reorder(index, 1)}
                 >
@@ -156,15 +178,31 @@ export default function RoutePlanner({
                 <button
                   type="button"
                   aria-label={`Delete checkpoint ${index + 1}`}
-                  onClick={() =>
-                    planner.update(
+                  className="route-delete"
+                  onClick={() => {
+                    if (planner.update(
                       planner.waypoints.filter((p) => p.id !== point.id),
-                    )
-                  }
+                    )) {
+                      setDeleted({ point, index });
+                      if (draft?.id === point.id) setDraft(null);
+                    }
+                  }}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={14} /> Delete
                 </button>
               </div>
+              {draft?.id === point.id && (
+                <form className="route-edit-form" aria-label={`Edit checkpoint ${index + 1}`} onSubmit={event => { event.preventDefault(); save(); }}>
+                  <label>Name<input autoFocus required maxLength={80} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /></label>
+                  <div className="route-coordinate-fields">
+                    <label>Latitude (decimal degrees)<input type="number" required min={-85} max={85} step="any" value={draft.latitude} onChange={event => setDraft({ ...draft, latitude: event.target.value })} /></label>
+                    <label>Longitude (decimal degrees)<input type="number" required min={-180} max={180} step="any" value={draft.longitude} onChange={event => setDraft({ ...draft, longitude: event.target.value })} /></label>
+                  </div>
+                  <p>Use negative values for south and west. To drag markers, close this editor and choose Add / move on map.</p>
+                  {editError && <p className="route-error" role="alert">{editError}</p>}
+                  <div className="route-actions"><button type="submit">Save checkpoint</button><button type="button" onClick={() => { setDraft(null); setEditError(""); }}>Cancel</button></div>
+                </form>
+              )}
             </div>
           ))}
         </div>

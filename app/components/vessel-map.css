@@ -982,7 +982,8 @@
   margin: 17px 0;
 }
 .route-checkpoint {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
   background: #fff;
@@ -1031,14 +1032,34 @@
 }
 .route-order {
   display: flex;
-  gap: 3px;
+  flex-wrap: wrap;
+  grid-column: 2;
+  gap: 6px;
 }
 .route-order button {
-  background: transparent;
-  border: 0;
-  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #fffaf3;
+  border: 1px solid #e5d8c5;
+  border-radius: 6px;
+  min-height: 40px;
+  min-width: 36px;
+  padding: 8px;
+  font-size: 12px;
   color: #8b795d;
 }
+.route-order .route-delete { color: #9e3f32; }
+.route-checkpoint-caption { display: block; font-size: 10px; color: #8a7d68; }
+.route-checkpoint-name { display: block; margin-top: 4px; font-size: 13px; overflow-wrap: anywhere; color: #594426; }
+.route-edit-form { grid-column: 1 / -1; border-top: 1px solid #ebdfce; padding-top: 14px; }
+.route-edit-form label { font-size: 11px; }
+.route-edit-form input { border: 1px solid #dfc8a9; border-radius: 5px; padding: 10px; margin: 5px 0 12px; box-sizing: border-box; font-size: 13px; }
+.route-coordinate-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.route-edit-form p { font-size: 11px; line-height: 1.6; color: #79582b; }
+.route-undo { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px; border-radius: 7px; background: #fff0d6; font-size: 12px; overflow-wrap: anywhere; }
+.route-undo button { background: white; border: 1px solid #dfc8a9; border-radius: 6px; padding: 9px 12px; color: #79582b; }
 .route-order button:disabled {
   opacity: 0.3;
 }
