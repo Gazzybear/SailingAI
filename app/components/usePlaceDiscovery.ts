@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Position } from "@/lib/briefing";
 import type { DiscoveryResponse } from "@/lib/discovery";
 
 type DiscoveryResult = DiscoveryResponse;
 export function usePlaceDiscovery() {
   const [request, setRequest] = useState<
-    (Position & { attempt: number }) | null
+    (Position & { attempt: number; radiusKm: number }) | null
   >(null);
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export function usePlaceDiscovery() {
     if (!request) return;
     const controller = new AbortController();
     fetch(
-      `/api/places?lat=${request.latitude}&lon=${request.longitude}&radiusKm=30`,
+      `/api/places?lat=${request.latitude}&lon=${request.longitude}&radiusKm=${request.radiusKm}`,
       { signal: controller.signal },
     )
       .then(async (r) => {
@@ -43,12 +43,12 @@ export function usePlaceDiscovery() {
       });
     return () => controller.abort();
   }, [request]);
-  function search(position: Position) {
+  const search = useCallback((position: Position, radiusKm = 30) => {
     setError("");
     setResult(null);
     setLoading(true);
-    setRequest((old) => ({ ...position, attempt: (old?.attempt ?? 0) + 1 }));
-  }
+    setRequest((old) => ({ ...position, radiusKm, attempt: (old?.attempt ?? 0) + 1 }));
+  }, []);
   function clear() {
     setRequest(null);
     setResult(null);

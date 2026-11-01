@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Anchor,
   ArrowUpRight,
@@ -32,6 +32,8 @@ import DiscoveredPlaceDetails from "./DiscoveredPlaceDetails";
 import RoutePlanner from "./RoutePlanner";
 import { useRoutePlanner } from "./useRoutePlanner";
 import VesselTrafficPanel from "./VesselTrafficPanel";
+import type { ForecastDestination } from "./DestinationConditions";
+import type { AISArea } from "@/lib/ais";
 import { useVesselTraffic } from "./useVesselTraffic";
 import MapCanvas, { type DepthLayer, type MapTarget } from "./MapCanvas";
 import "./vessel-map.css";
@@ -70,17 +72,23 @@ export default function VesselMap({
   forecast,
   loading,
   vessel,
+  onRouteDestinationChange,
 }: {
   position: VesselPosition;
   onPositionChange: (p: VesselPosition) => void;
   forecast?: ForecastRow;
   loading?: boolean;
   vessel?: string;
+  onRouteDestinationChange?: (destination: ForecastDestination | null) => void;
 }) {
   const [night, setNight] = useState(false);
   const [depthLayer, setDepthLayer] = useState<DepthLayer>("off");
   const route = useRoutePlanner();
-  const traffic = useVesselTraffic(position);
+  useEffect(() => {
+    onRouteDestinationChange?.(route.waypoints.at(-1) ?? null);
+  }, [route.waypoints, onRouteDestinationChange]);
+  const [trafficArea, setTrafficArea] = useState<AISArea>({ ...position, radius: 10 });
+  const traffic = useVesselTraffic(trafficArea);
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState("vessel");
   const [filter, setFilter] = useState("all");
@@ -88,6 +96,15 @@ export default function VesselMap({
   const [viewpoint, setViewpoint] = useState(position);
   const [listLimit, setListLimit] = useState(12);
   const discovery = usePlaceDiscovery();
+  const [discoverOnMap, setDiscoverOnMap] = useState(false);
+  const [placeRevision, setPlaceRevision] = useState(0);
+  const searchPlaces = discovery.search;
+  const placeRadius = Math.min(30, Math.max(1, Math.ceil(trafficArea.radius * 1.852)));
+  useEffect(() => {
+    if (!discoverOnMap) return;
+    const timer = setTimeout(() => searchPlaces({ latitude: trafficArea.latitude, longitude: trafficArea.longitude }, placeRadius), 900);
+    return () => clearTimeout(timer);
+  }, [discoverOnMap, trafficArea.latitude, trafficArea.longitude, placeRadius, searchPlaces, placeRevision]);
   const allPlaces: ExplorerPlace[] = useMemo(
     () => [
       ...mapPlaces,
@@ -211,12 +228,15 @@ export default function VesselMap({
               onClick={() => {
                 setFilter(id);
                 setSelected("vessel");
+                setDiscoverOnMap(true);
+                setPlaceRevision(value => value + 1);
               }}
             >
               <Icon size={14} />
               {label}
             </button>
           ))}
+          <button type="button" aria-pressed={traffic.enabled} onClick={() => traffic.setEnabled(!traffic.enabled)}><Radio size={14}/>Boats</button>
         </div>
         <button
           type="button"
@@ -233,7 +253,7 @@ export default function VesselMap({
           <span>
             <strong>Find harbours around the world</strong>
             <small>
-              Pan the map, then search within 30 km of its centre ·{" "}
+              {discoverOnMap ? "Places follow the map" : "Select Harbours or Marinas to load places"} · within {placeRadius} km of centre ·{" "}
               {viewpoint.latitude.toFixed(2)}°, {viewpoint.longitude.toFixed(2)}
               °
             </small>
@@ -246,12 +266,14 @@ export default function VesselMap({
             setSelected("vessel");
             setFilter("all");
             setListLimit(12);
-            discovery.search(viewpoint);
+            setDiscoverOnMap(true);
+            setPlaceRevision(value => value + 1);
           }}
         >
-          {discovery.loading ? "Searching…" : "Search this area"}
+          {discovery.loading ? "Loading places…" : "Load all places in this area"}
         </button>
       </div>
+      {discoverOnMap && <p className="worldwide-coverage">{discovery.loading ? "Loading mapped harbours, ports and marinas… " : `${places.length} matching places loaded. `}{trafficArea.radius * 1.852 > 30 ? "Zoom in: detailed place discovery covers 30 km from the map centre. " : ""}Community coverage is incomplete; up to 1,000 results per area. Pan to another coast to load its places.</p>}
       {(discovery.error || discovery.result) && (
         <div className="worldwide-result" role="status">
           {discovery.error
@@ -268,7 +290,7 @@ export default function VesselMap({
         </div>
       )}
       {discovery.result && (
-        <p className="worldwide-coverage">{discovery.result.coverage}</p>
+        <details className="worldwide-coverage"><summary>Place coverage and limitations</summary>{discovery.result.coverage}</details>
       )}
       <div className="chart-controls">
         <label>
@@ -329,6 +351,17 @@ export default function VesselMap({
           </p>
         )}
       </div>
+      <div className="traffic-map-controls" aria-label="Live boat map layer">
+        <strong><Radio size={14}/> Global boat feed · {traffic.enabled ? "on" : "off"}</strong>
+        <p role="status">{traffic.enabled ? traffic.message : "Select Boats above to show received vessel reports on this map."}</p>
+        <small>Follows the map · {trafficArea.radius} NM around its centre · display updates every 5 seconds. {trafficArea.radius >= 250 ? "Area limit reached: zoom in to cover the entire visible map. " : ""}Up to 5,000 recent reports; coverage depends on AIS receivers. No inferred positions or collision-avoidance guidance.</small>
+      </div>
+      <details className="chart-access-note">
+        <summary>Why isn’t the full UK / worldwide nautical chart available?</summary>
+        <p>The NOAA chart layer covers US waters. UK seabed shading is a coarse EMODnet depth model, not the same chart product.</p>
+        <p><a href="https://admiraltyapi.developer.azure-api.net/discovery-api-instructions" target="_blank" rel="noreferrer">ADMIRALTY’s free developer trial</a> has real chart styling for England’s south coast, but requires a subscription key and its charts are not up to date or routinely updated. Current full coverage uses licensed AVCS Online access.</p>
+        <p><a href="https://developer.garmin.com/marine-charts/web/" target="_blank" rel="noreferrer">Navionics worldwide charts</a> require a developer key. The free Standard viewer prohibits our route and boat overlays; the paid Enhanced service permits them. Neither chart service is connected here.</p>
+      </details>
       {route.editing && (
         <p className="route-editing-message">
           Adding checkpoints: click the map or drag an existing numbered
@@ -345,6 +378,7 @@ export default function VesselMap({
             onSelect={select}
             night={night}
             onViewChange={setViewpoint}
+            onTrafficAreaChange={setTrafficArea}
             waypoints={route.waypoints}
             routeEditing={route.editing}
             onAddWaypoint={route.add}
@@ -567,7 +601,6 @@ export default function VesselMap({
       />
       <VesselTrafficPanel
         traffic={traffic}
-        onHelsinkiDemo={() => choose({ latitude: 60.15, longitude: 24.96 })}
       />
       <div className="map-discovery">
         <div className="discovery-heading">

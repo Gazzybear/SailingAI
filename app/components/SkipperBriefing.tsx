@@ -18,6 +18,8 @@ import {
 import VesselMap from "./VesselMap";
 import HarbourGuide from "./HarbourGuide";
 import AlmanacGuide from "./AlmanacGuide";
+import ConditionsCard from "./ConditionsCard";
+import DestinationConditions, { type ForecastDestination } from "./DestinationConditions";
 import "./briefing.css";
 const time = (value: string) =>
   new Date(value).toLocaleString("en-GB", {
@@ -30,10 +32,14 @@ const time = (value: string) =>
 export default function SkipperBriefing({
   vessel,
   passageDate,
+  passageDestination,
 }: {
   vessel?: string;
   passageDate?: string;
+  passageDestination?: string;
 }) {
+  const [routeDestination, setRouteDestination] = useState<ForecastDestination | null>(null);
+  const [currentValidTime, setCurrentValidTime] = useState<string | null>(null);
   const [section, setSection] = useState<"map" | "marinas" | "almanac">("map");
   const [position, setPosition] = useState<Position>({
       latitude: 50.77,
@@ -45,10 +51,17 @@ export default function SkipperBriefing({
     [error, setError] = useState(""),
     [reload, setReload] = useState(0);
   useEffect(() => {
+    const timer = setInterval(() => {
+      setLoading(true);
+      setReload(value => value + 1);
+    }, 600000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
     const controller = new AbortController();
     fetch(
       `/api/briefing?latitude=${position.latitude}&longitude=${position.longitude}`,
-      { signal: controller.signal },
+      { signal: controller.signal, cache: "no-store" },
     )
       .then(async (r) => {
         const data = await r.json();
@@ -123,7 +136,7 @@ export default function SkipperBriefing({
           title: "Weather",
           icon: CloudSun,
           value: weatherLabel(row.code),
-          detail: `${display(row.temperature, "°C")} · rain ${display(row.rain, "mm")}`,
+          detail: `${display(row.temperature, "°C")} · precipitation ${display(row.rain, "mm")}`,
         },
       ]
     : [];
@@ -164,6 +177,18 @@ export default function SkipperBriefing({
           Almanac & tides
         </button>
       </nav>
+      <section hidden={section !== "map"} className="passage-conditions" aria-label="Current position and destination conditions">
+        <div className="conditions-intro"><span className="eyebrow">YOUR PASSAGE CONDITIONS</span><h2>Here now. There on arrival.</h2>
+          <p>Latest available model forecasts · checked automatically every 10 minutes while open · server cache up to 5 minutes. All times UTC.</p>
+          <p>These are forecasts, not onboard observations. Precipitation chance covers more than 0.1 mm in the preceding hour and can include snow. Check official warnings before sailing.</p>
+        </div>
+        <div className="conditions-comparison">
+          <ConditionsCard title="Current position" name={vessel || "Your vessel"} position={position} data={briefing} loading={loading} error={error}
+            validTime={currentValidTime} onTimeChange={setCurrentValidTime} onRefresh={() => { setLoading(true); setReload(value => value + 1); }}/>
+          <DestinationConditions key={passageDestination ?? "destination"} passageDestination={passageDestination} routeDestination={routeDestination}/>
+        </div>
+        <p className="conditions-meta">Current position is the simulated vessel location shown on the map; change it with the map’s position controls. Data © <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> and model providers, CC BY 4.0 / provider terms.</p>
+      </section>
       <div hidden={section === "almanac"}>
         <VesselMap
           position={position}
@@ -171,6 +196,7 @@ export default function SkipperBriefing({
           forecast={row}
           loading={loading}
           vessel={vessel}
+          onRouteDestinationChange={setRouteDestination}
         />
       </div>
       <div hidden={section !== "map"}>
@@ -246,7 +272,7 @@ export default function SkipperBriefing({
                       Pressure <b>{display(row.pressure, "hPa", 0)}</b>
                     </span>
                     <span>
-                      Rain chance <b>{display(row.rainChance, "%", 0)}</b>
+                      Precipitation chance <b>{display(row.rainChance, "%", 0)}</b>
                     </span>
                     <span>
                       Humidity <b>{display(row.humidity, "%", 0)}</b>
@@ -300,7 +326,7 @@ export default function SkipperBriefing({
                             <th>Gust kn</th>
                             <th>Visibility km</th>
                             <th>Wave m</th>
-                            <th>Rain mm</th>
+                            <th>Precip. mm</th>
                           </tr>
                         </thead>
                         <tbody>

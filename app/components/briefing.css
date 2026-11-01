@@ -278,3 +278,30 @@
     flex: 1;
   }
 }
+.passage-conditions { margin: 22px 0; }
+.conditions-intro h2 { margin: 9px 0; font-size: 26px; }
+.conditions-intro p, .conditions-meta { color: #5d727b; font-size: 11px; line-height: 1.7; }
+.conditions-comparison { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; margin-top: 18px; align-items: start; }
+.conditions-card { border: 1px solid #d3e3e3; background: linear-gradient(150deg,#fff,#eff7f6); border-radius: 16px; padding: 22px; min-width: 0; }
+.conditions-heading { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.conditions-heading h3 { font-size: 21px; margin: 8px 0; }
+.conditions-card .forecast-picker { display: grid; gap: 7px; }
+.conditions-valid { color: #2b706c; font-size: 12px; font-weight: 600; }
+.conditions-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.conditions-metrics > div { border: 1px solid #dbe7e7; background: #ffffffd9; border-radius: 11px; padding: 15px; min-width: 0; }
+.conditions-metrics svg { color: #297e86; }
+.conditions-metrics span, .conditions-metrics strong, .conditions-metrics small { display: block; }
+.conditions-metrics span { font-size: 11px; margin: 8px 0; color: #466572; }
+.conditions-metrics strong { font-size: 24px; color: #153f50; overflow-wrap: anywhere; }
+.conditions-metrics small { font-size: 10px; color: #60777e; line-height: 1.7; margin-top: 7px; }
+.conditions-secondary, .conditions-provenance, .destination-setup { font-size: 12px; line-height: 1.8; color: #47616c; }
+.conditions-provenance { border-top: 1px solid #d3e3e3; padding-top: 12px; }
+.conditions-provenance summary, .destination-setup summary { cursor: pointer; font-weight: 600; }
+.destination-setup { background: white; border: 1px solid #d3e3e3; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+.destination-setup label { display: grid; gap: 5px; margin: 12px 0; }
+.destination-setup select, .destination-setup input { width: 100%; min-width: 0; padding: 10px; border: 1px solid #bdd4d7; border-radius: 6px; background: #fff; color: #183f50; }
+.destination-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.destination-form label:first-child, .destination-form button { grid-column: 1/-1; }
+.conditions-empty p { color: #637d84; font-size: 13px; line-height: 1.9; }
+@media(max-width: 850px) { .conditions-comparison { grid-template-columns: 1fr; } }
+@media(max-width: 430px) { .conditions-card { padding: 15px; } .conditions-metrics strong { font-size: 21px; } }

@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   buildDiscoveryQuery,
   DISCOVERY_LIMIT,
+  DISCOVERY_ENDPOINTS,
   discoverGazetteerPorts,
   parseDiscoveryArea,
   parseDiscoveryElements,
@@ -27,7 +28,7 @@ it("rejects query injection, oversized areas, duplicate coordinates and mixed qu
     new URLSearchParams("lat=-33.86&lon=151.23&radiusKm=3"),
   );
   expect(buildDiscoveryQuery(area)).toContain("(around:3000,-33.86,151.23)");
-  expect(buildDiscoveryQuery(area)).toContain("out center 151");
+  expect(buildDiscoveryQuery(area)).toContain(`out center ${DISCOVERY_LIMIT + 1}`);
 });
 
 it("accepts small worldwide bounding boxes and point searches across the date line", () => {
@@ -138,7 +139,7 @@ it("performs bounded failover and reuses a successful result from cache", async 
   expect(fetcher.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
 });
 
-it("returns explicitly labelled bundled ports when both live providers fail", async () => {
+it("returns explicitly labelled bundled ports when all live providers fail", async () => {
   const { GET } = await import("../app/api/places/route");
   const fetcher = vi
     .spyOn(globalThis, "fetch")
@@ -160,7 +161,7 @@ it("returns explicitly labelled bundled ports when both live providers fail", as
   expect(
     body.places.every((place: { kind: string }) => place.kind === "port"),
   ).toBe(true);
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(fetcher).toHaveBeenCalledTimes(DISCOVERY_ENDPOINTS.length);
   expect(
     fetcher.mock.calls.every(
       ([url]) => !String(url).includes("api.openstreetmap.org"),

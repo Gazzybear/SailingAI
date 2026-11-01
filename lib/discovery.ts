@@ -33,10 +33,11 @@ export type DiscoveryResponse = {
   error?: string;
 };
 
-export const DISCOVERY_LIMIT = 150;
+export const DISCOVERY_LIMIT = 1000;
 export const DISCOVERY_COVERAGE =
   "OpenStreetMap community listings in the requested area; coverage is incomplete and some entries may be outdated or duplicated. Markers for areas are approximate centres, not entrances. Facilities and contacts are unverified map tags; confirm with the operator. This is a directory, not a nautical chart or pilotage guide.";
 export const DISCOVERY_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
   "https://overpass.private.coffee/api/interpreter",
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ] as const;
@@ -45,7 +46,7 @@ const cache = new Map<string, { expires: number; value: DiscoveryResponse }>();
 const pending = new Map<string, Promise<DiscoveryResponse>>();
 const cooldown = new Map<string, number>();
 const CACHE_LIMIT = 50;
-const MAX_BODY_BYTES = 1_000_000;
+const MAX_BODY_BYTES = 4_000_000;
 const ATTEMPT_MS = 4_000;
 const TOTAL_MS = 14_000;
 const PORTS_SOURCE =
@@ -131,7 +132,7 @@ export function buildDiscoveryQuery(area: DiscoveryArea): string {
     area.type === "point"
       ? `around:${area.radiusKm * 1000},${area.lat},${area.lon}`
       : `${area.south},${area.west},${area.north},${area.east}`;
-  return `[out:json][timeout:5][maxsize:33554432];(nwr["leisure"="marina"](${spatial});nwr["harbour"="yes"](${spatial});nwr["seamark:type"="harbour"](${spatial}););out center ${DISCOVERY_LIMIT + 1};`;
+  return `[out:json][timeout:5][maxsize:33554432];(nwr["leisure"="marina"](${spatial});nwr["harbour"="yes"](${spatial});nwr["seamark:type"="harbour"](${spatial});nwr["landuse"="port"](${spatial});nwr["industrial"="port"](${spatial});nwr["seamark:harbour:category"~"marina"](${spatial}););out center ${DISCOVERY_LIMIT + 1};`;
 }
 
 function textTag(value: unknown, max = 120): string | undefined {
@@ -217,7 +218,8 @@ export function parseDiscoveryElements(value: unknown): {
       tags.leisure === "marina" ||
       tags["seamark:harbour:category"] === "marina" ||
       tags["seamark:harbour:category"] === "marina_no_facilities";
-    if (!marina && tags.harbour !== "yes" && tags["seamark:type"] !== "harbour")
+    const port = tags.landuse === "port" || tags.industrial === "port";
+    if (!marina && !port && tags.harbour !== "yes" && tags["seamark:type"] !== "harbour")
       continue;
     const centre = element.type === "node" ? element : record(element.center);
     const lat = centre?.lat,
@@ -257,7 +259,7 @@ export function parseDiscoveryElements(value: unknown): {
     places.push({
       id,
       name,
-      kind: marina ? "marina" : "harbour",
+      kind: marina ? "marina" : port ? "port" : "harbour",
       lat,
       lon,
       facilities: [

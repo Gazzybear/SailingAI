@@ -32,12 +32,12 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   const position: Position = { latitude, longitude };
-  const key = `${latitude.toFixed(3)},${longitude.toFixed(3)}`;
+  const key = `${latitude},${longitude}`;
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now()) return Response.json(saved.value);
-  const common = `latitude=${latitude}&longitude=${longitude}&timezone=GMT&forecast_days=3`;
+  const common = `latitude=${latitude}&longitude=${longitude}&timezone=GMT&forecast_days=3&cell_selection=sea`;
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?${common}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,cloud_cover&daily=sunrise,sunset&wind_speed_unit=kn`;
-  const marineUrl = `https://marine-api.open-meteo.com/v1/marine?${common}&hourly=wave_height,wave_direction,wave_period,swell_wave_height,sea_level_height_msl`;
+  const marineUrl = `https://marine-api.open-meteo.com/v1/marine?${common}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height,swell_wave_direction,swell_wave_period,sea_level_height_msl`;
   const sources: Briefing["sources"] = [],
     errors: string[] = [];
   const merged = new Map<string, ForecastRow>();
@@ -99,6 +99,9 @@ export async function GET(request: Request) {
             wavePeriod: "wave_period",
             waveDirection: "wave_direction",
             swell: "swell_wave_height",
+            windWave: "wind_wave_height",
+            swellPeriod: "swell_wave_period",
+            swellDirection: "swell_wave_direction",
             seaLevel: "sea_level_height_msl",
           };
     data.hourly.time.forEach((t, i) => {
@@ -120,6 +123,9 @@ export async function GET(request: Request) {
         wavePeriod: null,
         waveDirection: null,
         swell: null,
+        windWave: null,
+        swellPeriod: null,
+        swellDirection: null,
         seaLevel: null,
       };
       for (const [field, variable] of Object.entries(mapping)) {
@@ -143,7 +149,7 @@ export async function GET(request: Request) {
     );
   if (cache.size >= 64) cache.delete(cache.keys().next().value!);
   cache.set(key, {
-    expires: Date.now() + (errors.length ? 60000 : 600000),
+    expires: Date.now() + (errors.length ? 60000 : 300000),
     value,
   });
   return Response.json(value);

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AISResponse, AISShip } from "@/lib/ais";
+import type { AISArea, AISResponse, AISShip } from "@/lib/ais";
 
 export type TrafficProvider = "finland" | "aisstream";
 export type VesselTraffic = {
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   provider: TrafficProvider;
-  setProvider: (provider: TrafficProvider) => void;
+  radius: number;
   ships: AISShip[];
   status: AISResponse["status"] | "off" | "loading";
   loading: boolean;
@@ -25,17 +25,14 @@ type Snapshot = {
   loading: boolean;
 };
 
-/** Opt-in 30-second snapshots. Data from a previous position/provider is never exposed. */
-export function useVesselTraffic(position: {
-  latitude: number;
-  longitude: number;
-}): VesselTraffic {
-  const [enabled, setEnabled] = useState(false);
-  const [provider, setProvider] = useState<TrafficProvider>("finland");
+/** Continuous server collection, displayed every five seconds for the visible area. */
+export function useVesselTraffic(position: AISArea): VesselTraffic {
+  const [enabled, setEnabled] = useState(true);
+  const provider: TrafficProvider = "aisstream";
   const [revision, setRevision] = useState(0);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const key = `${enabled}|${provider}|${position.latitude}|${position.longitude}|${revision}`;
+  const key = `${enabled}|${provider}|${position.latitude}|${position.longitude}|${position.radius}|${revision}`;
 
   useEffect(() => {
     if (!enabled) return;
@@ -48,15 +45,15 @@ export function useVesselTraffic(position: {
       controller = new AbortController();
       const request = controller;
       const timeout = setTimeout(() => request.abort(), 20000);
-      // Clear the previous response while fetching; errors never leave old vessels marked live.
-      setSnapshot({ key, response: null, error: "", loading: true });
+      // Keep markers steady during same-area polls; area changes and failures clear them.
+      setSnapshot(previous => previous?.key === key && previous.response ? previous : { key, response: null, error: "", loading: true });
       setNow(Date.now());
       try {
         const query = new URLSearchParams({
           provider,
           lat: String(position.latitude),
           lon: String(position.longitude),
-          radius: "10",
+          radius: String(position.radius),
         });
         const result = await fetch(`/api/ais?${query}`, {
           signal: request.signal,
@@ -100,10 +97,10 @@ export function useVesselTraffic(position: {
     }
     const first = setTimeout(() => {
       void load();
-    }, 0);
+    }, 1400);
     const polling = setInterval(() => {
       void load();
-    }, 30000);
+    }, 5000);
     const clock = setInterval(() => setNow(Date.now()), 10000);
     return () => {
       active = false;
@@ -112,7 +109,7 @@ export function useVesselTraffic(position: {
       clearInterval(clock);
       controller?.abort();
     };
-  }, [enabled, provider, position.latitude, position.longitude, key]);
+  }, [enabled, provider, position.latitude, position.longitude, position.radius, key]);
 
   const current = enabled && snapshot?.key === key ? snapshot : null;
   const response = current?.response ?? null;
@@ -136,7 +133,7 @@ export function useVesselTraffic(position: {
     enabled,
     setEnabled,
     provider,
-    setProvider,
+    radius: position.radius,
     ships,
     status,
     loading: status === "loading",

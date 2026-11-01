@@ -1,7 +1,5 @@
-import WebSocket from "ws";
+import { streamSnapshot } from "@/lib/ais-stream";
 import {
-  aisBoundingBoxes,
-  parseAISStreamShip,
   parseFinlandShip,
   type AISArea,
   type AISProvider,
@@ -31,7 +29,7 @@ function responseData(
     source:
       provider === "finland"
         ? "Fintraffic / digitraffic.fi — filtered and reformatted, CC BY 4.0"
-        : "AISstream.io — sampled AIS position reports",
+        : "AISstream.io — continuous AIS position reports",
     sourceUrl:
       provider === "finland"
         ? "https://www.digitraffic.fi/en/marine-traffic/"
@@ -84,69 +82,6 @@ async function finland(area: AISArea): Promise<AISShip[]> {
     .slice(0, 500);
 }
 
-function aisstream(area: AISArea, apiKey: string): Promise<AISShip[]> {
-  return new Promise((resolve, reject) => {
-    const ships = new Map<string, AISShip>();
-    const socket = new WebSocket("wss://stream.aisstream.io/v0/stream", {
-      perMessageDeflate: true,
-      handshakeTimeout: 8000,
-      maxPayload: 1024 * 1024,
-    });
-    let finished = false,
-      confirmed = false;
-    let collectTimer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = setTimeout(() => finish(new Error("AIS timed out")), 12000);
-    function finish(error?: Error) {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timeout);
-      if (collectTimer) clearTimeout(collectTimer);
-      socket.terminate();
-      if (error) reject(error);
-      else resolve([...ships.values()].slice(0, 500));
-    }
-    socket.on("open", () => {
-      socket.send(
-        JSON.stringify({
-          APIKey: apiKey,
-          BoundingBoxes: aisBoundingBoxes(area),
-          FilterMessageTypes: [
-            "PositionReport",
-            "StandardClassBPositionReport",
-            "ExtendedClassBPositionReport",
-          ],
-        }),
-      );
-      collectTimer = setTimeout(
-        () =>
-          finish(
-            confirmed || ships.size
-              ? undefined
-              : new Error("AIS subscription not confirmed"),
-          ),
-        6000,
-      );
-    });
-    socket.on("message", (raw) => {
-      try {
-        const data = JSON.parse(raw.toString());
-        if (data.error || data.Error) {
-          finish(new Error("AIS subscription failed"));
-          return;
-        }
-        if (data.MessageType === "SubscriptionConfirmation") confirmed = true;
-        const ship = parseAISStreamShip(data, area, Date.now());
-        if (ship && (ships.size < 500 || ships.has(ship.mmsi)))
-          ships.set(ship.mmsi, ship);
-      } catch {
-        /* Ignore non-position or malformed messages; never manufacture a position. */
-      }
-    });
-    socket.on("error", () => finish(new Error("AIS connection failed")));
-    socket.on("close", () => finish(new Error("AIS connection closed")));
-  });
-}
-
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const provider = params.get("provider") ?? "aisstream";
@@ -161,12 +96,12 @@ export async function GET(request: Request) {
     Math.abs(latitude) > 85 ||
     Math.abs(longitude) > 180 ||
     radius < 1 ||
-    radius > 20
+    radius > (provider === "finland" ? 20 : 250)
   ) {
     return Response.json(
       {
         error:
-          "Select finland or aisstream, latitude −85 to 85, longitude −180 to 180, and radius 1–20 nautical miles.",
+          "Select finland or aisstream, latitude −85 to 85, longitude −180 to 180, and radius 1–250 nautical miles.",
       },
       { status: 400, headers },
     );
@@ -182,6 +117,15 @@ export async function GET(request: Request) {
       ),
       { headers },
     );
+  if (chosen === "aisstream") {
+    const snapshot = streamSnapshot({ latitude, longitude, radius }, apiKey!);
+    const status = snapshot.error ? "error" : snapshot.connected && snapshot.ships.length ? "live" : "empty";
+    const message = snapshot.error
+      ? "AIS connection interrupted; reconnecting automatically. Last received positions are hidden until the feed reconnects."
+      : !snapshot.connected ? "Connecting to the continuous global AIS feed…"
+      : `${snapshot.ships.length} recent vessels accumulated in this map area. Listening continuously; more boats appear as they transmit. Reports expire after 30 minutes.${snapshot.limited ? " The 5,000-report memory limit has been reached; zoom into a smaller area." : ""}`;
+    return Response.json(responseData(chosen, status, message, snapshot.error || !snapshot.connected ? [] : snapshot.ships), { headers });
+  }
   const key = `${provider}:${latitude}:${longitude}:${radius}`;
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now())
@@ -199,13 +143,8 @@ export async function GET(request: Request) {
     const area = { latitude, longitude, radius };
     const promise = (async () => {
       try {
-        const ships = await (chosen === "finland"
-          ? finland(area)
-          : aisstream(area, apiKey!));
-        const message =
-          chosen === "finland"
-            ? `${ships.length} recent reports from the Finnish AIS receiver network. Coverage is regional; reports older than 30 minutes are excluded.`
-            : `${ships.length} reports received during a six-second sample. This is not a complete traffic picture; reports older than 30 minutes are excluded.`;
+        const ships = await finland(area);
+        const message = `${ships.length} recent reports from the Finnish AIS receiver network. Coverage is regional; reports older than 30 minutes are excluded.`;
         const data = responseData(
           chosen,
           ships.length ? "live" : "empty",

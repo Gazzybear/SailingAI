@@ -4,7 +4,7 @@ import Image from "next/image";
 import type * as Leaflet from "leaflet";
 import type { MapPlace } from "@/lib/map-places";
 import { splitRouteAtDateline, type RouteWaypoint } from "@/lib/route-planner";
-import type { AISShip } from "@/lib/ais";
+import { aisDistanceNm, type AISArea, type AISShip } from "@/lib/ais";
 import type { Position } from "@/lib/briefing";
 import "leaflet/dist/leaflet.css";
 
@@ -34,6 +34,7 @@ export default function MapCanvas({
   onSelect,
   night,
   onViewChange,
+  onTrafficAreaChange,
   waypoints,
   routeEditing,
   onAddWaypoint,
@@ -48,6 +49,7 @@ export default function MapCanvas({
   onSelect: (id: string) => void;
   night: boolean;
   onViewChange: (position: Position) => void;
+  onTrafficAreaChange: (area: AISArea) => void;
   waypoints: RouteWaypoint[];
   routeEditing: boolean;
   onAddWaypoint: (position: Position) => void;
@@ -58,6 +60,7 @@ export default function MapCanvas({
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null);
   const library = useRef<typeof Leaflet | null>(null);
+  const aisMarkers = useRef(new Map<string, Leaflet.Marker>());
   const [ready, setReady] = useState(false),
     [failed, setFailed] = useState(false);
   const initial = useRef(target);
@@ -130,6 +133,7 @@ export default function MapCanvas({
   }, []);
   useEffect(() => {
     let cancelled = false;
+    const markers = aisMarkers.current;
     let observer: ResizeObserver | undefined;
     import("leaflet")
       .then((L) => {
@@ -146,10 +150,16 @@ export default function MapCanvas({
           initial.current.zoom,
         );
         map.current = instance;
-        instance.on("moveend", () => {
+        const reportView = () => {
           const centre = instance.getCenter().wrap();
           onViewChange({ latitude: centre.lat, longitude: centre.lng });
-        });
+          const bounds = instance.getBounds();
+          const centrePoint = { latitude: centre.lat, longitude: centre.lng };
+          const radius = Math.max(...[bounds.getNorthEast(), bounds.getNorthWest(), bounds.getSouthEast(), bounds.getSouthWest()].map(corner => aisDistanceNm(centrePoint, { latitude: corner.lat, longitude: corner.lng })));
+          if (Number.isFinite(radius)) onTrafficAreaChange({ latitude: Number(centre.lat.toFixed(3)), longitude: Number(centre.lng.toFixed(3)), radius: Math.max(5, Math.min(250, Math.ceil(radius))) });
+        };
+        instance.on("moveend", reportView);
+        reportView();
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           className: "overview-base-tiles",
           maxZoom: 19,
@@ -177,10 +187,11 @@ export default function MapCanvas({
     return () => {
       cancelled = true;
       observer?.disconnect();
+      markers.clear();
       map.current?.remove();
       map.current = null;
     };
-  }, [onViewChange]);
+  }, [onViewChange, onTrafficAreaChange]);
   useEffect(() => {
     if (!ready || !map.current) return;
     map.current.setView([target.latitude, target.longitude], target.zoom, {
@@ -365,10 +376,11 @@ export default function MapCanvas({
     const L = library.current,
       instance = map.current;
     if (!ready || !L || !instance) return;
-    const group = L.layerGroup().addTo(instance);
+    const visible = new Set(ships.map(ship => ship.mmsi));
+    for (const [mmsi, marker] of aisMarkers.current) if (!visible.has(mmsi)) { marker.remove(); aisMarkers.current.delete(mmsi); }
     ships.forEach((ship) => {
       const direction = Number.isFinite(ship.cog) ? ship.cog : 0;
-      const marker = L.marker([ship.latitude, ship.longitude], {
+      const options = {
         icon: L.divIcon({
           className: "ais-ship-pin",
           html:
@@ -379,16 +391,24 @@ export default function MapCanvas({
           iconAnchor: [13, 13],
         }),
         title: `AIS ${ship.name || ship.mmsi}`,
+        alt: `AIS ${ship.name || ship.mmsi}`,
         zIndexOffset: 700,
-      }).addTo(group);
+      };
+      let marker = aisMarkers.current.get(ship.mmsi);
+      if (!marker) {
+        marker = L.marker([ship.latitude, ship.longitude], options).addTo(instance);
+        aisMarkers.current.set(ship.mmsi, marker);
+      } else {
+        marker.setLatLng([ship.latitude, ship.longitude]);
+        marker.setIcon(options.icon);
+      }
+      marker.getElement()?.setAttribute("aria-label", options.title);
       const panel = document.createElement("div");
       panel.textContent = `${ship.name || "Vessel"} · MMSI ${ship.mmsi}\nReported ${new Date(ship.timestamp).toLocaleString("en-GB", { timeZone: "UTC" })} UTC\nSpeed ${ship.sog === undefined ? "unavailable" : `${ship.sog.toFixed(1)} kn`} · Course ${ship.cog === undefined ? "unavailable" : `${ship.cog.toFixed(0)}°T`}\nAIS reports can be delayed or incomplete.`;
       panel.style.whiteSpace = "pre-line";
-      marker.bindPopup(panel);
+      panel.style.width = "230px";
+      if (marker.getPopup()) marker.setPopupContent(panel); else marker.bindPopup(panel);
     });
-    return () => {
-      group.remove();
-    };
   }, [ready, ships]);
   useEffect(() => {
     const L = library.current;

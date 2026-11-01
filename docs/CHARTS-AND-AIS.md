@@ -16,11 +16,19 @@ UI updates every 30 seconds when enabled and reports older than 30 minutes are e
 
 Attribution: **Fintraffic / digitraffic.fi; filtered and reformatted**, [CC BY 4.0 terms](https://www.digitraffic.fi/en/terms-of-service/). Actual Helsinki responses and map markers were tested, including recent reports seconds old. This is regional receiver coverage, not worldwide AIS or a replacement for lookout/radar/onboard AIS.
 
-## Optional global AISstream
+## Global AISstream
 
-[AISstream documentation](https://aisstream.io/documentation) describes authenticated WebSocket access. The server adapter subscribes to a bounded area and collects a short snapshot; credentials never enter client code. Configure `AISSTREAM_API_KEY` privately in `.env.local` or the host environment, then restart the server and select AISstream. Without a key, the API and UI return `unconfigured`; no demonstration ships are substituted.
+[AISstream documentation](https://aisstream.io/documentation) specifies server-side authenticated, compressed WebSocket access. The local app now keeps one connection open and accumulates the latest report per MMSI rather than taking six-second samples. The single Boats filter follows the map area. Display refresh is five seconds, report expiry 30 minutes, area limit 250 NM and memory limit 5,000 vessels; limits and report timestamps are visible. It closes idle connections and reconnects with exponential backoff. The private key was configured and real Solent reports/markers were verified on 1 November 2026. Keys are never committed or included in responses. See [implementation and deployment limits](PASSAGE-CONDITIONS.md).
 
-The implementation limits concurrent upstream requests and caches briefly. Global reception is incomplete and depends on the service/account. The adapter was tested with representative payloads and failure paths, but a live authenticated AISstream connection was not tested because no key was provided. Fintraffic is the verified working live demo.
+The unauthenticated Fintraffic API remains available as a regional backend option, but Helsinki/provider choices have been removed from the map interface.
+
+## UK and worldwide chart availability
+
+[ADMIRALTY AVCS Online Discovery instructions](https://admiraltyapi.developer.azure-api.net/discovery-api-instructions) offer a free south-coast England WMS trial, requiring an account and subscription key. It permits 2,000 calls/day at 30 calls/30 seconds. Crucially, the trial ENC data is **not up to date and not routinely updated**. Full AVCS Online has more than 15,000 ENCs, updated weekly, through approved technical solution providers for shore-based planning. Trial charts cannot satisfy a current-chart requirement.
+
+[Garmin Navionics Web API](https://developer.garmin.com/marine-charts/web/) offers worldwide cartography with daily updates. Its free Standard viewer requires a developer key, must be free for users, and prohibits additional features over the charts. The paid Enhanced plan permits vessel tracking, route and POI overlays. Consequently the free viewer does not meet this app's requested combined map workflow. Neither service is connected; access credentials and appropriate licence terms are the remaining dependency, not simply a missing map style.
+
+The existing EMODnet UK layer is a coarse seabed model and must not be relabelled as an official nautical chart. OpenSeaMap community seamarks and crowdsourced depths also do not establish equivalent comprehensive, maintained official chart coverage. No free, unrestricted, current worldwide chart source meeting all these requirements was verified.
 
 ## Editable planning routes
 

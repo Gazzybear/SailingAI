@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Radio, RefreshCw, Ship } from "lucide-react";
-import type { VesselTraffic, TrafficProvider } from "./useVesselTraffic";
+import { ExternalLink, Radio, RefreshCw } from "lucide-react";
+import type { VesselTraffic } from "./useVesselTraffic";
 import "./vessel-traffic.css";
 
 function age(timestamp: string, now: number) {
@@ -25,10 +25,8 @@ const number = (value: number | undefined, suffix: string) =>
 
 export default function VesselTrafficPanel({
   traffic,
-  onHelsinkiDemo,
 }: {
   traffic: VesselTraffic;
-  onHelsinkiDemo: () => void;
 }) {
   const sourceURL =
     traffic.response?.sourceUrl ||
@@ -52,11 +50,6 @@ export default function VesselTrafficPanel({
               : traffic.status === "busy"
                 ? "FEED BUSY"
                 : "UNAVAILABLE";
-  function demo() {
-    traffic.setProvider("finland");
-    traffic.setEnabled(true);
-    onHelsinkiDemo();
-  }
   return (
     <section
       className="vessel-traffic"
@@ -77,26 +70,6 @@ export default function VesselTrafficPanel({
         </span>
       </div>
       <div className="vessel-traffic-controls">
-        <label className="traffic-toggle">
-          <input
-            type="checkbox"
-            checked={traffic.enabled}
-            onChange={(event) => traffic.setEnabled(event.target.checked)}
-          />
-          <span>Traffic layer</span>
-        </label>
-        <label className="traffic-provider">
-          Report provider
-          <select
-            value={traffic.provider}
-            onChange={(event) =>
-              traffic.setProvider(event.target.value as TrafficProvider)
-            }
-          >
-            <option value="finland">Fintraffic — Finnish waters</option>
-            <option value="aisstream">AISstream — global API key</option>
-          </select>
-        </label>
         <button
           className="button"
           disabled={!traffic.enabled || traffic.loading}
@@ -108,17 +81,8 @@ export default function VesselTrafficPanel({
       <p className="traffic-coverage">
         {traffic.provider === "finland"
           ? "Fintraffic covers its Finnish receiver network. An empty result outside that region does not mean the sea is clear."
-          : "AISstream requires a server API key and returns a brief collection of received reports. Global receiver coverage is incomplete."}
+          : "AISstream listens continuously for the map area and accumulates each vessel’s latest report. Global receiver coverage is incomplete."}
       </p>
-      <div className="traffic-demo">
-        <button className="text-button" onClick={demo}>
-          <Ship size={14} /> Try Helsinki live example
-        </button>
-        <span>
-          Moves your simulated vessel to Helsinki; surrounding AIS reports come
-          from the real Finnish feed.
-        </span>
-      </div>
       {traffic.enabled && (
         <p
           className={`traffic-feed-message ${traffic.status === "error" || traffic.status === "busy" ? "traffic-feed-error" : ""}`}
@@ -130,8 +94,8 @@ export default function VesselTrafficPanel({
       {traffic.enabled && traffic.response && (
         <p className="traffic-retrieval">
           Fetched {utc(traffic.response.retrievedAt)} ·{" "}
-          {age(traffic.response.retrievedAt, traffic.now)} · Polling every 30
-          seconds while enabled · Search radius 10 NM
+          {age(traffic.response.retrievedAt, traffic.now)} · Updating every 5
+          seconds while enabled · Map radius {traffic.radius} NM
         </p>
       )}
       {traffic.enabled && traffic.ships.length > 0 && (

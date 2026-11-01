@@ -1,5 +1,7 @@
 # SailingAI
 
+Skipper briefing now compares **current-position and destination conditions**, with independent arrival-hour selection, sea state, visibility, precipitation chance, wind and swell. Choose a harbour, coordinates or the final route checkpoint. The **Live boats (AIS)** filter sits directly above the map and defaults to UK/global AISstream; configure its key privately on the server. See [forecast and live-boat details](docs/PASSAGE-CONDITIONS.md).
+
 The logbook includes separate TWS/AWS, compass corrections, instrument log distance, sea-state and swell fields, a traditional table and full CSV export. Download a printable paper sheet or upload a JPEG/PNG/WebP photo for row-by-row skipper review. See [logbook and photo workflow](docs/LOGBOOK-AND-PHOTOS.md) for limits, preservation of old entries and verification details.
 
 The existing map's **Depth layer** filter switches between Off, UK seabed (free EMODnet) and US chart (NOAA), preserving the current map and vessel position. UK click-to-read values are coarse grid means relative to LAT, not current water depth or clearance. See [UK depth data](docs/UK-DEPTH.md).
@@ -90,7 +92,7 @@ The map supports up to 50 named planning checkpoints. Enable **Add checkpoints**
 
 **US chart depths** adds NOAA's chart reference display with numerical soundings requested in metres. **Try San Francisco chart** moves the simulated vessel to the example. NOAA expressly excludes this display from navigation use. UK and worldwide licensed chart coverage is not connected; no depth or clearance values are invented. The day/night filter affects only the general basemap, preserving the NOAA chart palette.
 
-**Vessel traffic** is opt-in. **Try Helsinki live example** shows actual Fintraffic AIS reports from Finnish waters, with report ages, SOG/COG and 30-second refresh. It is not simulated traffic or a collision-avoidance display. Global AISstream support requires a separate server-only `AISSTREAM_API_KEY`; without it the UI says unconfigured. The existing OpenAI key cannot authenticate AIS/chart providers. See [chart and AIS sources](docs/CHARTS-AND-AIS.md).
+**Boats** is one map filter for the continuous global AISstream feed, enabled by default. Configure `AISSTREAM_API_KEY` privately on the server. The collector accumulates each vessel's latest report, follows the viewed map area and refreshes the display every five seconds. It is bounded to 5,000 recent vessels and a 250 NM radius, with visible limits. Coverage is incomplete. See [forecast and boat details](docs/PASSAGE-CONDITIONS.md) and [chart and AIS sources](docs/CHARTS-AND-AIS.md).
 
 ## Almanac and worldwide harbour discovery
 

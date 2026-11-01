@@ -1349,3 +1349,11 @@
 .ais-map-legend.below-chart {
   top: 102px;
 }
+.traffic-map-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; padding: 16px 20px; background: #f2f1fc; border-top: 1px solid #dedcf1; color: #36365a; font-size: 12px; }
+.traffic-map-controls label { display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap; }
+.traffic-map-controls input { accent-color: #6a43b9; width: 17px; height: 17px; }
+.traffic-map-controls select, .traffic-map-controls button { background: white; border: 1px solid #c6c4df; border-radius: 6px; color: #393858; padding: 9px; font-size: 11px; max-width: 100%; }
+.traffic-map-controls p { flex-basis: 100%; margin: 0; line-height: 1.6; }
+.traffic-map-controls small { display: block; font-size: 10px; line-height: 1.7; }
+.chart-access-note { padding: 12px 20px; font-size: 11px; line-height: 1.8; color: #4f6372; border-top: 1px solid #dce5e8; background: #f7f9fb; }
+.chart-access-note summary { cursor: pointer; font-weight: 600; }

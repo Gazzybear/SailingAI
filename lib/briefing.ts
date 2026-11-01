@@ -16,6 +16,9 @@ export type ForecastRow = {
   wavePeriod: number | null;
   waveDirection: number | null;
   swell: number | null;
+  windWave: number | null;
+  swellPeriod: number | null;
+  swellDirection: number | null;
   seaLevel: number | null;
 };
 export type ForecastSource = {
@@ -33,6 +36,11 @@ export type Briefing = {
   sunrise: string | null;
   sunset: string | null;
 };
+/** Never substitute a different valid hour when a requested arrival is unavailable. */
+export function forecastAt(rows: ForecastRow[], requested: string | null, now = Date.now()) {
+  const validTime = requested ?? new Date(Math.floor(now / 3600000) * 3600000).toISOString();
+  return rows.find(row => Date.parse(row.time) === Date.parse(validTime));
+}
 export function finite(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }

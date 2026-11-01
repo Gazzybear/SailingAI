@@ -471,7 +471,7 @@ export default function Home() {
             </button>
           </div>
           {deskView === "briefing" ? (
-            <SkipperBriefing vessel={p?.vessel} passageDate={p?.date} />
+            <SkipperBriefing vessel={p?.vessel} passageDate={p?.date} passageDestination={p?.destination} />
           ) : (
             <>
               {!p ? (
