@@ -1,5 +1,9 @@
 # SailingAI
 
+The logbook includes separate TWS/AWS, compass corrections, instrument log distance, sea-state and swell fields, a traditional table and full CSV export. Download a printable paper sheet or upload a JPEG/PNG/WebP photo for row-by-row skipper review. See [logbook and photo workflow](docs/LOGBOOK-AND-PHOTOS.md) for limits, preservation of old entries and verification details.
+
+The existing map's **Depth layer** filter switches between Off, UK seabed (free EMODnet) and US chart (NOAA), preserving the current map and vessel position. UK click-to-read values are coarse grid means relative to LAT, not current water depth or clearance. See [UK depth data](docs/UK-DEPTH.md).
+
 Your intelligent sailing logbook. Built for recreational sailors who want to turn informal observations into consistent, reviewed passage records.
 
 Create a passage → record an observation → prepare structured fields → review and correct → save → reopen → export CSV.

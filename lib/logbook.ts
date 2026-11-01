@@ -2,23 +2,83 @@ import { z } from "zod";
 export const fields = {
   timeText: "Observation time as written",
   location: "Location / event",
-  windDirection: "Wind direction",
-  windKnots: "Wind speed (knots)",
+  windDirection: "Wind direction (reference unspecified)",
+  windKnots: "Wind speed — unspecified type (knots)",
   beaufort: "Beaufort force",
   seaState: "Sea state",
   visibility: "Visibility",
   weather: "Weather",
   precipitation: "Precipitation",
-  heading: "Heading (degrees)",
+  heading: "Heading as reported (degrees)",
   cog: "Course over ground (degrees)",
   reference: "True / magnetic reference",
   stw: "Speed through water (knots)",
   sog: "Speed over ground (knots)",
   notes: "Navigation and crew notes",
+  entryKind: "Entry type",
+  logNm: "Log — instrument reading (NM)",
+  compassCourse: "Co Co — compass course (°C)",
+  deviationDegrees: "Compass deviation (degrees)",
+  deviationDirection: "Deviation E / W",
+  variationDegrees: "Magnetic variation (degrees)",
+  variationDirection: "Variation E / W",
+  leewayDegrees: "Leeway (degrees)",
+  leewaySide: "Leeway drift to port / starboard",
+  trueCourse: "True course — water track (°T)",
+  trueWindKnots: "True wind speed — TWS (knots)",
+  trueWindDirection: "True wind from (direction / reference)",
+  apparentWindKnots: "Apparent wind speed — AWS (knots)",
+  apparentWindAngle: "Apparent wind angle — AWA (degrees)",
+  apparentWindSide: "Apparent wind from port / starboard",
+  seaStateCode: "Sea state — WMO code (0–9)",
+  swellHeight: "Swell height (metres)",
+  swellDescription: "Swell description (e.g. Low)",
+  swellDirection: "Swell from (direction)",
+  visibilityCode: "Vis — G / M / P / F",
+  visibilityNm: "Measured visibility (NM)",
+  weatherNotation: "Weather notation (e.g. bc, r)",
+  pressureHpa: "Barometer (hPa)",
+  latitude: "Observed latitude (decimal degrees)",
+  longitude: "Observed longitude (decimal degrees)",
+  depthMetres: "Depth sounder reading (metres)",
+  depthReference: "Depth reference (surface / keel / transducer)",
 } as const;
 const text = z.string().nullable();
 const speed = z.number().min(0).max(300).nullable();
+const angle = z.number().min(0).max(360).nullable();
+const correction = z.number().min(0).max(180).nullable();
+const nonnegative = z.number().min(0).nullable();
+const addedShape = {
+  entryKind: z.enum(["hourly", "event"]).nullable(),
+  logNm: nonnegative,
+  compassCourse: angle,
+  deviationDegrees: correction,
+  deviationDirection: z.enum(["E", "W"]).nullable(),
+  variationDegrees: correction,
+  variationDirection: z.enum(["E", "W"]).nullable(),
+  leewayDegrees: correction,
+  leewaySide: z.enum(["Port", "Starboard"]).nullable(),
+  trueCourse: angle,
+  trueWindKnots: speed,
+  trueWindDirection: text,
+  apparentWindKnots: speed,
+  apparentWindAngle: correction,
+  apparentWindSide: z.enum(["Port", "Starboard"]).nullable(),
+  seaStateCode: z.number().int().min(0).max(9).nullable(),
+  swellHeight: nonnegative,
+  swellDescription: text,
+  swellDirection: text,
+  visibilityCode: z.enum(["G", "M", "P", "F"]).nullable(),
+  visibilityNm: nonnegative,
+  weatherNotation: text,
+  pressureHpa: z.number().min(800).max(1100).nullable(),
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
+  depthMetres: nonnegative,
+  depthReference: text,
+};
 export const Extraction = z.object({
+  ...addedShape,
   timeText: text,
   location: text,
   windDirection: text,
@@ -37,6 +97,46 @@ export const Extraction = z.object({
   warnings: z.array(z.string()),
 });
 export type Reading = z.infer<typeof Extraction>;
+export type ReadingField = keyof typeof fields;
+// Only new fields are backfilled. Missing or corrupt original fields still fail validation.
+export const StoredReading = z.preprocess((value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  return {
+    ...Object.fromEntries(Object.keys(addedShape).map((key) => [key, null])),
+    ...value,
+  };
+}, Extraction);
+export const numericFields: Partial<
+  Record<ReadingField, { min: number; max?: number; step: string }>
+> = {
+  windKnots: { min: 0, max: 300, step: "any" },
+  trueWindKnots: { min: 0, max: 300, step: "any" },
+  apparentWindKnots: { min: 0, max: 300, step: "any" },
+  stw: { min: 0, max: 300, step: "any" },
+  sog: { min: 0, max: 300, step: "any" },
+  heading: { min: 0, max: 360, step: "any" },
+  compassCourse: { min: 0, max: 360, step: "any" },
+  trueCourse: { min: 0, max: 360, step: "any" },
+  cog: { min: 0, max: 360, step: "any" },
+  deviationDegrees: { min: 0, max: 180, step: "any" },
+  variationDegrees: { min: 0, max: 180, step: "any" },
+  leewayDegrees: { min: 0, max: 180, step: "any" },
+  apparentWindAngle: { min: 0, max: 180, step: "any" },
+  beaufort: { min: 0, max: 12, step: "1" },
+  seaStateCode: { min: 0, max: 9, step: "1" },
+  logNm: { min: 0, step: "any" },
+  swellHeight: { min: 0, step: "any" },
+  visibilityNm: { min: 0, step: "any" },
+  depthMetres: { min: 0, step: "any" },
+  pressureHpa: { min: 800, max: 1100, step: "any" },
+  latitude: { min: -90, max: 90, step: "any" },
+  longitude: { min: -180, max: 180, step: "any" },
+};
+export function validEntryTime(kind: Reading["entryKind"], observedAt: string) {
+  return kind === "hourly"
+    ? validLondonTime(observedAt) && observedAt.endsWith(":00")
+    : !observedAt || validLondonTime(observedAt);
+}
 export const emptyReading = (): Reading =>
   Object.fromEntries([
     ...Object.keys(fields).map((k) => [k, null]),
@@ -84,8 +184,8 @@ export type Passage = {
 const EntrySchema = z.object({
   id: z.string(),
   original: z.string(),
-  values: Extraction,
-  aiDraft: Extraction.nullable(),
+  values: StoredReading,
+  aiDraft: StoredReading.nullable(),
   source: z.enum(["openai", "manual", "sample"]),
   observedAt: z.string(),
   createdAt: z.string(),

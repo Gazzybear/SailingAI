@@ -1050,16 +1050,65 @@
   font-size: 12px;
   color: #8b795d;
 }
-.route-order .route-delete { color: #9e3f32; }
-.route-checkpoint-caption { display: block; font-size: 10px; color: #8a7d68; }
-.route-checkpoint-name { display: block; margin-top: 4px; font-size: 13px; overflow-wrap: anywhere; color: #594426; }
-.route-edit-form { grid-column: 1 / -1; border-top: 1px solid #ebdfce; padding-top: 14px; }
-.route-edit-form label { font-size: 11px; }
-.route-edit-form input { border: 1px solid #dfc8a9; border-radius: 5px; padding: 10px; margin: 5px 0 12px; box-sizing: border-box; font-size: 13px; }
-.route-coordinate-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.route-edit-form p { font-size: 11px; line-height: 1.6; color: #79582b; }
-.route-undo { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px; border-radius: 7px; background: #fff0d6; font-size: 12px; overflow-wrap: anywhere; }
-.route-undo button { background: white; border: 1px solid #dfc8a9; border-radius: 6px; padding: 9px 12px; color: #79582b; }
+.route-order .route-delete {
+  color: #9e3f32;
+}
+.route-checkpoint-caption {
+  display: block;
+  font-size: 10px;
+  color: #8a7d68;
+}
+.route-checkpoint-name {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  color: #594426;
+}
+.route-edit-form {
+  grid-column: 1 / -1;
+  border-top: 1px solid #ebdfce;
+  padding-top: 14px;
+}
+.route-edit-form label {
+  font-size: 11px;
+}
+.route-edit-form input {
+  border: 1px solid #dfc8a9;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px 0 12px;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+.route-coordinate-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.route-edit-form p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #79582b;
+}
+.route-undo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #fff0d6;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.route-undo button {
+  background: white;
+  border: 1px solid #dfc8a9;
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #79582b;
+}
 .route-order button:disabled {
   opacity: 0.3;
 }
@@ -1122,6 +1171,94 @@
 }
 .chart-controls input {
   accent-color: #386b95;
+}
+.chart-controls select {
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #bacdd9;
+  border-radius: 6px;
+  background: white;
+  color: #315c78;
+  font: inherit;
+}
+.chart-controls p a {
+  color: #315c78;
+}
+.uk-depth-active .explorer-map-area {
+  min-height: 560px;
+}
+.uk-depth-readout {
+  position: absolute;
+  top: 140px;
+  left: 17px;
+  z-index: 501;
+  width: 244px;
+  max-width: calc(100% - 75px);
+  max-height: calc(100% - 330px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #d3cce5;
+  border-radius: 9px;
+  background: #fffffff5;
+  color: #44375f;
+  box-shadow: 0 4px 15px #18374415;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.uk-depth-readout > strong {
+  display: block;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+.uk-depth-readout > [role="status"] {
+  font-weight: 650;
+}
+.uk-depth-readout small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  margin-top: 5px;
+  color: #6b617b;
+}
+.uk-depth-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 9px;
+}
+.uk-depth-actions button {
+  background: #f4f0fa;
+  color: #514173;
+  border: 1px solid #d3cce5;
+  border-radius: 5px;
+  padding: 7px;
+  font-size: 10px;
+}
+.uk-depth-actions button:disabled {
+  opacity: 0.55;
+}
+.uk-depth-actions a {
+  color: #514173;
+  font-size: 9px;
+}
+.uk-depth-colour-key {
+  margin-top: 8px;
+  font-size: 10px;
+}
+.uk-depth-colour-key summary {
+  cursor: pointer;
+  color: #514173;
+}
+.uk-depth-colour-key img {
+  display: block;
+  margin: 8px auto 0;
+  background: white;
+}
+.explorer-canvas .uk-depth-tooltip {
+  color: #514173;
+  border: 1px solid #d3cce5;
+  font-weight: 650;
 }
 .chart-controls button {
   background: #fff;

@@ -33,7 +33,7 @@ import RoutePlanner from "./RoutePlanner";
 import { useRoutePlanner } from "./useRoutePlanner";
 import VesselTrafficPanel from "./VesselTrafficPanel";
 import { useVesselTraffic } from "./useVesselTraffic";
-import MapCanvas, { type MapTarget } from "./MapCanvas";
+import MapCanvas, { type DepthLayer, type MapTarget } from "./MapCanvas";
 import "./vessel-map.css";
 
 export type VesselPosition = { latitude: number; longitude: number };
@@ -78,7 +78,7 @@ export default function VesselMap({
   vessel?: string;
 }) {
   const [night, setNight] = useState(false);
-  const [charts, setCharts] = useState(false);
+  const [depthLayer, setDepthLayer] = useState<DepthLayer>("off");
   const route = useRoutePlanner();
   const traffic = useVesselTraffic(position);
   const [expanded, setExpanded] = useState(false);
@@ -157,7 +157,7 @@ export default function VesselMap({
   const remotePlace = allPlaces.find((p) => p.id === selected)?.remote;
   const details = selectedPlace ? placeDetails(selectedPlace) : null;
   function choose(next: VesselPosition) {
-    setCharts(false);
+    setDepthLayer("off");
     mapArea.current?.scrollIntoView({ block: "nearest" });
     setError("");
     setSelected("vessel");
@@ -180,7 +180,7 @@ export default function VesselMap({
   }
   return (
     <section
-      className={`vessel-map ${expanded ? "map-expanded" : ""}`}
+      className={`vessel-map ${expanded ? "map-expanded" : ""} ${depthLayer === "uk" ? "uk-depth-active" : ""}`}
       aria-labelledby="vessel-map-heading"
     >
       <div className="explorer-header">
@@ -259,7 +259,10 @@ export default function VesselMap({
             : `${discovery.result!.places.length} ${discovery.result!.dataMode === "gazetteer" ? "general port references" : "community-mapped places"} returned${discovery.result!.truncated ? " (result limit reached)" : ""}. ${discovery.result!.warning ?? "Coverage varies; an empty result does not mean there are no harbours."}`}
           {discovery.result && (
             <small>
-              {discovery.result.attribution} · {discovery.result.dataMode === "gazetteer" ? `snapshot dated ${new Date(discovery.result.retrievedAt).toLocaleDateString("en-GB",{timeZone:"UTC"})}` : `retrieved ${formatTime(discovery.result.retrievedAt)} UTC`}
+              {discovery.result.attribution} ·{" "}
+              {discovery.result.dataMode === "gazetteer"
+                ? `snapshot dated ${new Date(discovery.result.retrievedAt).toLocaleDateString("en-GB", { timeZone: "UTC" })}`
+                : `retrieved ${formatTime(discovery.result.retrievedAt)} UTC`}
             </small>
           )}
         </div>
@@ -269,24 +272,54 @@ export default function VesselMap({
       )}
       <div className="chart-controls">
         <label>
-          <input
-            type="checkbox"
-            checked={charts}
-            onChange={(event) => setCharts(event.target.checked)}
-          />{" "}
-          US chart depths · NOAA reference display
+          Depth layer
+          <select
+            value={depthLayer}
+            onChange={(event) =>
+              setDepthLayer(event.target.value as DepthLayer)
+            }
+          >
+            <option value="off">Off</option>
+            <option value="uk">UK seabed · EMODnet</option>
+            <option value="us">US chart · NOAA</option>
+          </select>
         </label>
+        <button
+          type="button"
+          onClick={() => {
+            focus({ latitude: 50.77, longitude: -1.27 }, 12);
+            setDepthLayer("uk");
+          }}
+        >
+          View Solent seabed
+        </button>
         <button
           type="button"
           onClick={() => {
             choose({ latitude: 37.817, longitude: -122.45 });
             focus({ latitude: 37.817, longitude: -122.45 }, 14);
-            setCharts(true);
+            setDepthLayer("us");
           }}
         >
           Try San Francisco chart
         </button>
-        {charts && (
+        {depthLayer === "uk" && (
+          <p>
+            UK and European seabed model. Click the sea for a numeric cell mean
+            in metres relative to Lowest Astronomical Tide (LAT). The ≈115 m
+            grid can miss rocks, shoals and narrow channels; it is not a
+            nautical chart or a navigation/clearance check. Changing the layer
+            keeps your vessel and map position.{" "}
+            <a
+              href="https://emodnet.ec.europa.eu/en/bathymetry"
+              target="_blank"
+              rel="noreferrer"
+            >
+              EMODnet DTM 2024 source ↗
+            </a>
+          </p>
+        )}
+        {depthLayer === "us" && (
           <p>
             US waters only. Depth soundings are requested in metres from this
             NOAA display; zoom in to see numbers. Colours retain the provider’s
@@ -316,7 +349,7 @@ export default function VesselMap({
             routeEditing={route.editing}
             onAddWaypoint={route.add}
             onMoveWaypoint={route.move}
-            charts={charts}
+            depthLayer={depthLayer}
             ships={traffic.ships}
           />
           <div className="map-floating-controls">

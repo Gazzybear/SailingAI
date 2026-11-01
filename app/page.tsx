@@ -1,6 +1,9 @@
 "use client";
 import Link from "next/link";
 import SkipperBriefing from "./components/SkipperBriefing";
+import LogbookFields from "./components/LogbookFields";
+import LogbookTable from "./components/LogbookTable";
+import PhotoLogImport from "./components/PhotoLogImport";
 import { useEffect, useRef, useState } from "react";
 import {
   Anchor,
@@ -32,6 +35,8 @@ import {
   storageKey,
   StoreSchema,
   validLondonTime,
+  validEntryTime,
+  numericFields,
 } from "@/lib/logbook";
 
 type Draft = {
@@ -164,9 +169,14 @@ export default function Home() {
     values = emptyReading(),
     original = note,
   ) {
+    setError("");
     setDraft({
       original,
-      values: structuredClone(values),
+      values: structuredClone(
+        source === "manual"
+          ? { ...values, entryKind: "hourly" as const }
+          : values,
+      ),
       aiDraft: source === "manual" ? null : structuredClone(values),
       source,
       observedAt: "",
@@ -218,7 +228,13 @@ export default function Home() {
       const validated = Extraction.safeParse(draft.values);
       if (!validated.success) {
         setError(
-          "Check numeric readings: Beaufort 0–12, headings 0–360 and speeds 0–300 knots.",
+          "Check numeric readings: sea state 0–9, Beaufort 0–12, courses 0–360, corrections/AWA 0–180, speeds 0–300, valid coordinates and non-negative distances/depths.",
+        );
+        return;
+      }
+      if (!validEntryTime(validated.data.entryKind, observedAt)) {
+        setError(
+          "Hourly observations need a confirmed date and an exact hour (e.g. 14:00). Choose Event to record a departure, manoeuvre or incident at its actual time.",
         );
         return;
       }
@@ -285,14 +301,7 @@ export default function Home() {
   }
   function updateField(key: keyof typeof fields, value: string) {
     if (!draft) return;
-    const numeric = [
-      "windKnots",
-      "beaufort",
-      "heading",
-      "cog",
-      "stw",
-      "sog",
-    ].includes(key);
+    const numeric = Boolean(numericFields[key]);
     setDraft({
       ...draft,
       values: {
@@ -591,6 +600,15 @@ export default function Home() {
                           Passage log <span>{p.entries.length}</span>
                         </button>
                       </div>
+                      <PhotoLogImport
+                        key={p.id}
+                        entries={p.entries}
+                        disabled={Boolean(draft) || busy}
+                        onReview={(reading, original) => {
+                          begin("openai", reading, original);
+                          setTab("write");
+                        }}
+                      />
                       {tab === "write" ? (
                         draft ? (
                           <section className="editor">
@@ -641,50 +659,16 @@ export default function Home() {
                                 }
                               />
                               <small>
-                                Europe/London. Optional; confirm the date for
-                                overnight passages. Untimed entries remain
-                                untimed.
+                                Europe/London · 24-hour time. Hourly
+                                observations require HH:00; event entries may
+                                use the actual minute. Confirm the date for
+                                overnight passages.
                               </small>
                             </label>
-                            <div className="review-grid">
-                              {Object.entries(fields).map(([key, label]) => (
-                                <label
-                                  className={
-                                    "field " + (key === "notes" ? "full" : "")
-                                  }
-                                  key={key}
-                                >
-                                  {label}
-                                  <input
-                                    type={
-                                      [
-                                        "windKnots",
-                                        "beaufort",
-                                        "heading",
-                                        "cog",
-                                        "stw",
-                                        "sog",
-                                      ].includes(key)
-                                        ? "number"
-                                        : "text"
-                                    }
-                                    step="any"
-                                    value={
-                                      draft.values[
-                                        key as keyof typeof fields
-                                      ] ?? ""
-                                    }
-                                    placeholder="Not recorded"
-                                    onChange={(e) =>
-                                      updateField(
-                                        key as keyof typeof fields,
-                                        e.target.value,
-                                      )
-                                    }
-                                  />
-                                </label>
-                              ))}
-                            </div>
+                            <LogbookFields
+                              values={draft.values}
+                              onChange={updateField}
+                            />
                             {draft.aiDraft && (
                               <details>
                                 <summary>View original prepared values</summary>
@@ -809,6 +793,7 @@ export default function Home() {
                               Export CSV
                             </button>
                           </div>
+                          <LogbookTable entries={p.entries} />
                           {!p.entries.length ? (
                             <div className="empty-log">
                               <FileText size={32} />

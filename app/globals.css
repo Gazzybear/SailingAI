@@ -691,7 +691,8 @@ footer > span {
   font-weight: 600;
   color: #58716f;
 }
-.field input {
+.field input,
+.field select {
   width: 100%;
   min-width: 0;
   background: #fcfdfc;
@@ -715,6 +716,96 @@ footer > span {
 }
 .full {
   grid-column: 1/-1;
+}
+.logbook-fieldset {
+  border: 1px solid #d7e1dc;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 22px 0;
+  min-width: 0;
+}
+.logbook-fieldset legend {
+  color: var(--ink);
+  font-weight: 650;
+  padding: 0 8px;
+  font-size: 15px;
+}
+.logbook-fieldset > p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #58716f;
+}
+.logbook-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 20px 0;
+  border: 1px solid #d7e1dc;
+  border-radius: 8px;
+}
+.logbook-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 1800px;
+}
+.logbook-table caption {
+  text-align: left;
+  padding: 14px;
+  color: #58716f;
+}
+.logbook-table th,
+.logbook-table td {
+  border: 1px solid #d7e1dc;
+  padding: 12px;
+  text-align: left;
+}
+.logbook-table thead {
+  background: #edf4f1;
+}
+.logbook-table tbody th {
+  white-space: nowrap;
+}
+.paper-upload {
+  border-top: 1px solid #d7e1dc;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.paper-upload h3 {
+  margin: 0 0 10px;
+}
+.paper-upload input {
+  max-width: 100%;
+}
+.paper-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 350px;
+  object-fit: contain;
+  margin: 16px 0;
+  border-radius: 8px;
+}
+.paper-upload {
+  padding: 20px;
+  background: #f5f8f6;
+  border-radius: 10px;
+}
+.paper-upload summary {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.paper-upload p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.photo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
 }
 .editor-actions {
   display: flex;
